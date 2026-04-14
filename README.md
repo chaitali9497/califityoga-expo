@@ -1,50 +1,107 @@
-# Welcome to your Expo app 👋
+# Califitoga Expo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Califitoga is a wellness and habit-tracking mobile app built with Expo and React Native. The app combines habit creation, daily progress tracking, onboarding, mood logging, and simple reporting in a clean green-themed interface.
 
-## Get started
+## Features
 
-1. Install dependencies
+- Splash, welcome, login, and sign-up flow
+- Multi-step onboarding flow for collecting daily routine preferences
+- Create regular or one-time habits
+- Daily, weekly, and monthly habit scheduling
+- Morning, afternoon, and evening habit grouping
+- Habit streak tracking
+- Mood calendar with optional feeling tags
+- Report screen with habit stats and visual summaries
+- Account screen with profile and app settings UI
+- Local persistence using AsyncStorage
+
+## Tech Stack
+
+- Expo 54
+- React Native 0.81
+- React 19
+- Expo Router for file-based navigation
+- TypeScript
+- AsyncStorage for local data persistence
+
+## Project Structure
+
+```text
+app/
+  (auth)/          Authentication and entry screens
+  (onboarding)/    Multi-step onboarding flow
+  (tabs)/          Main app screens
+src/
+  components/      Reusable UI components
+  context/         Habit and onboarding state providers
+  store/           Local storage helpers
+  theme/           Shared colors and theme tokens
+  types/           Shared TypeScript types
+assets/images/     App branding and illustration assets
+```
+
+## Main Screens
+
+- `Home`: shows active habits, completed habits, and time-of-day filters
+- `Create Regular Habit`: create habits with icon, color, repeat rule, and schedule
+- `My Habits`: search, filter, and review saved habits
+- `Mood Stat`: log moods in a calendar view with feeling labels
+- `Report`: view completion summaries and chart-based insights
+- `Account`: profile, plan, preferences, and logout UI
+
+## App Flow
+
+1. The app opens on a splash screen.
+2. Users move through welcome, sign-in, or sign-up screens.
+3. New users continue through onboarding steps.
+4. Authenticated users land in the main tab flow.
+5. Habits are stored locally and restored when the app reopens.
+
+## Getting Started
+
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Start the Expo development server:
 
    ```bash
-   npx expo start
+   npm run start
    ```
 
-In the output, you'll find options to open the app in a
+3. Run on a specific platform if needed:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```bash
+   npm run android
+   npm run ios
+   npm run web
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Available Scripts
 
-## Get a fresh project
+- `npm run start` - start the Expo dev server
+- `npm run android` - open the app on Android
+- `npm run ios` - open the app on iOS
+- `npm run web` - run the app in the browser
+- `npm run lint` - run lint checks
 
-When you're ready, run:
+## Data Storage
 
-```bash
-npm run reset-project
-```
+Habit data is currently stored locally with AsyncStorage through `src/store/habitStorage.ts`. The `HabitProvider` loads habits on startup and saves updates automatically.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Current Notes
 
-## Learn more
+- Authentication is currently UI-driven and uses simulated flows
+- Report charts contain placeholder and mock data in some sections
+- Mood entries are currently stored in component state, not persistent storage
+- The project uses Expo Router with hidden native tab bars and a custom bottom navigation component
 
-To learn more about developing your project with Expo, look at the following resources:
+## Future Improvements
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Connect login and sign-up screens to a real backend
+- Persist mood logs and onboarding results
+- Add edit and delete actions for habits
+- Improve report calculations with real historical data
+- Add reminders and notifications
