@@ -11,29 +11,31 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-// Dummy credentials
-const DUMMY_EMAIL = "test@example.com";
-const DUMMY_PASSWORD = "password123";
+import { getApiErrorMessage, login } from "@/src/services/authService";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const [email, setEmail] = useState(DUMMY_EMAIL);
-  const [password, setPassword] = useState(DUMMY_PASSWORD);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setLoading(true);
+    setErrorMessage("");
 
-    // fake API
-    setTimeout(() => {
+    try {
+      await login({ email, password });
       setLoading(false);
       router.replace("/(tabs)/home");
-    }, 2000);
+    } catch (error) {
+      setLoading(false);
+      setErrorMessage(getApiErrorMessage(error));
+    }
   };
 
   return (
@@ -93,6 +95,8 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
+      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
       {/* Remember + Forgot */}
       <View style={styles.row}>
         <TouchableOpacity
@@ -140,7 +144,7 @@ export default function LoginScreen() {
         <View style={styles.overlay}>
           <View style={styles.loaderBox}>
             <ActivityIndicator size="large" color="#2E7D32" />
-            <Text style={styles.loadingText}>Sign in...</Text>
+            <Text style={styles.loadingText}>Waking server and signing in...</Text>
           </View>
         </View>
       </Modal>
@@ -185,6 +189,11 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     marginLeft: 8,
+  },
+  errorText: {
+    color: "#C62828",
+    marginTop: -4,
+    marginBottom: 12,
   },
   row: {
     flexDirection: "row",

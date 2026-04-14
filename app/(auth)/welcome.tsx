@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, StatusBar } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Link } from "expo-router";
 
@@ -28,8 +28,8 @@ export default function WelcomeScreen() {
 
       {/* Main Content */}
       <View style={styles.mainContent}>
-        <Text style={styles.title}>Let's Get Started!</Text>
-        <Text style={styles.subtitle}>Let's dive in into your account</Text>
+        <Text style={styles.title}>Let&apos;s Get Started!</Text>
+        <Text style={styles.subtitle}>Let&apos;s dive in into your account</Text>
 
         {/* Social Buttons */}
         <View style={styles.socialButtons}>

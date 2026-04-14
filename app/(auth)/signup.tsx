@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/src/theme";
 import { useRouter } from "expo-router";
+import { getApiErrorMessage, register } from "@/src/services/authService";
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState("");
@@ -18,19 +19,24 @@ export default function SignUpScreen() {
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
-const handleSignUp = () => {
-  if (!agree) return;
+  const handleSignUp = async () => {
+    if (!agree) return;
 
-  setLoading(true);
+    setLoading(true);
+    setErrorMessage("");
 
-  // Simulated API call
-  setTimeout(() => {
-    setLoading(false);
-    router.replace("/(onboarding)/step1");
-  }, 2000);
-};
+    try {
+      await register({ email, password });
+      setLoading(false);
+      router.replace("/(onboarding)/step1");
+    } catch (error) {
+      setLoading(false);
+      setErrorMessage(getApiErrorMessage(error));
+    }
+  };
 
 
   return (
@@ -43,7 +49,7 @@ const handleSignUp = () => {
       {/* Title */}
       <Text style={styles.title}>Join Habitly Today ✨</Text>
       <Text style={styles.subtitle}>
-        Start your habit journey with Habitly. It's quick, easy, and free!
+        Start your habit journey with Habitly. It&apos;s quick, easy, and free!
       </Text>
 
       {/* Email */}
@@ -81,6 +87,8 @@ const handleSignUp = () => {
           />
         </TouchableOpacity>
       </View>
+
+      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
       {/* Terms */}
       <TouchableOpacity
@@ -138,7 +146,7 @@ const handleSignUp = () => {
         <View style={styles.overlay}>
           <View style={styles.loaderBox}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Sign up...</Text>
+            <Text style={styles.loadingText}>Waking server and creating account...</Text>
           </View>
         </View>
       </Modal>
@@ -184,6 +192,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
     color: colors.textPrimary,
+  },
+  errorText: {
+    color: "#C62828",
+    marginTop: -4,
+    marginBottom: 12,
   },
   checkboxRow: {
     flexDirection: "row",
