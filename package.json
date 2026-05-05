@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:apk": "eas build -p android --profile apk"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -19,7 +20,9 @@
     "@react-navigation/native": "^7.1.8",
     "axios": "^1.15.0",
     "expo": "~54.0.32",
+    "expo-auth-session": "~7.0.10",
     "expo-constants": "~18.0.13",
+    "expo-crypto": "~15.0.8",
     "expo-font": "~14.0.11",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",

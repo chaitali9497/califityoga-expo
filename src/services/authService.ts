@@ -2,6 +2,7 @@ import { isAxiosError } from "axios";
 import axiosInstance from "../config/axiosInstance";
 
 type AuthPayload = {
+  name: string; // Optional for login, required for registration
   email: string;
   password: string;
 };

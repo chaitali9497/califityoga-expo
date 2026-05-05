@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { getApiErrorMessage, register } from "@/src/services/authService";
 
 export default function SignUpScreen() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [agree, setAgree] = useState(false);
@@ -29,7 +30,7 @@ export default function SignUpScreen() {
     setErrorMessage("");
 
     try {
-      await register({ email, password });
+      await register({ name, email, password });
       setLoading(false);
       router.replace("/(onboarding)/step1");
     } catch (error) {
@@ -37,7 +38,6 @@ export default function SignUpScreen() {
       setErrorMessage(getApiErrorMessage(error));
     }
   };
-
 
   return (
     <View style={styles.container}>
@@ -51,6 +51,20 @@ export default function SignUpScreen() {
       <Text style={styles.subtitle}>
         Start your habit journey with Habitly. It&apos;s quick, easy, and free!
       </Text>
+
+      {/* Name */}
+      <Text style={styles.label}>Name</Text>
+      <View style={styles.inputBox}>
+        <Ionicons name="person-outline" size={18} color={colors.textMuted} />
+        <TextInput
+          placeholder="Full name"
+          placeholderTextColor={colors.textMuted}
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+        />
+      </View>
 
       {/* Email */}
       <Text style={styles.label}>Email</Text>
@@ -133,9 +147,9 @@ export default function SignUpScreen() {
       <TouchableOpacity
         style={[
           styles.signUpBtn,
-          (!email || !password || !agree) && { opacity: 0.6 },
+          (!name || !email || !password || !agree) && { opacity: 0.6 },
         ]}
-        disabled={!email || !password || !agree}
+        disabled={!name || !email || !password || !agree}
         onPress={handleSignUp}
       >
         <Text style={styles.signUpText}>Sign up</Text>
@@ -153,6 +167,7 @@ export default function SignUpScreen() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

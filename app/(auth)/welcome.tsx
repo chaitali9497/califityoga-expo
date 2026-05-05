@@ -1,176 +1,234 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Google from "expo-auth-session/providers/google";
 import { Link } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import { useEffect } from "react";
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+WebBrowser.maybeCompleteAuthSession();
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
- 
-  
-  return (
-    <View style={[
-      styles.container,
-      {
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom,
-        paddingLeft: insets.left,
-        paddingRight: insets.right,
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: "YOUR_EXPO_CLIENT_ID",
+    androidClientId: "YOUR_ANDROID_CLIENT_ID",
+    iosClientId: "YOUR_IOS_CLIENT_ID",
+  });
+
+  useEffect(() => {
+    if (response?.type === "success") {
+      const { authentication } = response;
+      if (authentication) {
+        console.log("Google Token:", authentication.accessToken);
       }
-    ]}>
-      {/* Header with Logo */}
-      <View style={styles.header}>
-        <Image
-          source={require('../../assets/images/logo.png')} // Update this path
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
+      //  Send token to backend here
+    }
+  }, [response]);
 
-      {/* Main Content */}
-      <View style={styles.mainContent}>
-        <Text style={styles.title}>Let&apos;s Get Started!</Text>
-        <Text style={styles.subtitle}>Let&apos;s dive in into your account</Text>
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: "#F8FBF8" }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          style={[
+            styles.container,
+            {
+              paddingTop: insets.top,
+              paddingBottom: insets.bottom,
+            },
+          ]}
+        >
+          {/* Logo */}
+          <Image
+            source={require("../../assets/images/logo.png")}
+            style={styles.logo}
+          />
 
-        {/* Social Buttons */}
-        <View style={styles.socialButtons}>
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={styles.socialButtonText}>G  Continue with Google</Text>
-          </TouchableOpacity>
+          {/* Content */}
+          <View style={styles.card}>
+            <Text style={styles.title}>Let’s Get Started</Text>
+            <Text style={styles.subtitle}>
+              Build healthy habits with Califitoga
+            </Text>
 
-          
+            {/* Google Button */}
+            <Pressable
+              onPress={() => promptAsync()}
+              style={({ pressed }) => [
+                styles.socialButton,
+                {
+                  backgroundColor: pressed ? "#EEF7EE" : "#FFFFFF",
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
+              ]}
+            >
+              <Text style={styles.socialText}>🔍 Continue with Google</Text>
+            </Pressable>
 
-          <TouchableOpacity style={styles.socialButton}>
-            <Text style={styles.socialButtonText}>📱  Continue with Facebook</Text>
-          </TouchableOpacity>
+            {/* Facebook (UI only) */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.socialButton,
+                {
+                  backgroundColor: pressed ? "#EEF7EE" : "#FFFFFF",
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
+              ]}
+            >
+              <Text style={styles.socialText}>📘 Continue with Facebook</Text>
+            </Pressable>
 
-         
+            {/* Divider */}
+            <Text style={styles.or}>or</Text>
+
+            {/* Auth Buttons */}
+            <Link href="./signup" asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryBtn,
+                  {
+                    backgroundColor: pressed ? "#1B5E20" : "#2E7D32",
+                  },
+                ]}
+              >
+                <Text style={styles.primaryText}>Create Account</Text>
+              </Pressable>
+            </Link>
+
+            <Link href="./login" asChild>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.secondaryBtn,
+                  {
+                    backgroundColor: pressed ? "#E8F5E8" : "#FFFFFF",
+                  },
+                ]}
+              >
+                <Text style={styles.secondaryText}>Sign In</Text>
+              </Pressable>
+            </Link>
+          </View>
+
+          {/* Footer */}
+          <Text style={styles.footer}>Privacy Policy · Terms of Service</Text>
         </View>
-
-        {/* Auth Buttons */}
-       <View style={styles.authButtons}>
-  <Link href="./signup" asChild>
-    <TouchableOpacity style={styles.signUpButton}>
-      <Text style={styles.signUpText}>Sign up</Text>
-    </TouchableOpacity>
-  </Link>
-
-  <Link href="./login" asChild>
-    <TouchableOpacity style={styles.signInButton}>
-      <Text style={styles.signInText}>Sign in</Text>
-    </TouchableOpacity>
-  </Link>
-</View>
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Privacy Policy · Terms of Service</Text>
-        </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  header: {
-    height: 100,
-    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#FFFFFF",
   },
+
   logo: {
-    width: 150,
-    height: 150,
+    width: 120,
+    height: 120,
+    marginTop: 20,
+    marginBottom: 10,
   },
-  mainContent: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 40,
+
+  card: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    marginTop: 20,
+
+    // iOS shadow
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+
+    // Android shadow
+    elevation: 5,
   },
+
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "700",
     color: "#1F7A1F",
     textAlign: "center",
-    marginBottom: 8,
   },
+
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#6B7C6B",
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 25,
   },
-  socialButtons: {
-    marginBottom: 30,
-  },
+
   socialButton: {
     height: 52,
-    borderRadius: 12,
-    borderWidth: 1.5,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+    borderWidth: 1,
     borderColor: "#E8F5E8",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-    backgroundColor: "#FFFFFF",
   },
-  socialButtonText: {
-    fontSize: 15,
-    fontWeight: "500",
+
+  socialText: {
     color: "#2E7D32",
-  },
-  authButtons: {
-    alignItems: "center",
-  },
-  signUpButton: {
-    height: 56,
-    width: "100%",
-    borderRadius: 16,
-    backgroundColor: "#2E7D32",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  signUpText: {
-    fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
   },
-  signInButton: {
-    height: 56,
-    width: "100%",
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#2E7D32",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  signInText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#2E7D32",
-  },
-  footer: {
-    position: "absolute",
-    bottom: 30,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 13,
-    color: "#8A9B8A",
+
+  or: {
     textAlign: "center",
+    marginVertical: 10,
+    color: "#999",
+  },
+
+  primaryBtn: {
+    height: 54,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  primaryText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+  secondaryBtn: {
+    height: 54,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 12,
+    borderWidth: 1.5,
+    borderColor: "#2E7D32",
+  },
+
+  secondaryText: {
+    color: "#2E7D32",
+    fontWeight: "600",
+  },
+
+  footer: {
+    marginTop: 20,
+    color: "#8A9B8A",
+    fontSize: 13,
   },
 });
