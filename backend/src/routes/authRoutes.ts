@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
-import User from "../models/User";
 import { generateToken } from "../middleware/auth";
+import User from "../models/User";
 
 const router = express.Router();
 
@@ -13,17 +13,20 @@ router.post("/register", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
+    const normalizedEmail = String(email).toLowerCase().trim();
+    const normalizedName = typeof name === "string" ? name.trim() : "";
+
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(409).json({ error: "User already exists" });
     }
 
     // Create new user
     const user = new User({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password,
-      name: name || "",
+      name: normalizedName,
     });
 
     await user.save();
@@ -41,7 +44,15 @@ router.post("/register", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Registration error:", error);
-    res.status(500).json({ error: error.message || "Registration failed" });
+
+    if (error.code === 11000) {
+      return res.status(409).json({ error: "Email already registered" });
+    }
+
+    res.status(500).json({
+      error: "Registration failed",
+      details: error.message || "An unexpected error occurred",
+    });
   }
 });
 
