@@ -2,12 +2,24 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IHabit extends Document {
   userId: mongoose.Types.ObjectId;
-  title: string;
-  description?: string;
-  category: string;
-  frequency: "daily" | "weekly" | "monthly";
-  color?: string;
-  icon?: string;
+
+  name: string;
+  icon: string;
+  color: string;
+
+  habitType: "Regular" | "OneTime";
+  repeat: "Daily" | "Weekly" | "Monthly";
+
+  weeklyDays?: string[];
+  monthlyDate?: number;
+  monthlyDates?: number[];
+
+  timeOfDay: "Morning" | "Afternoon" | "Evening";
+  reminderTime?: string;
+
+  streak: number;
+  lastCompleted?: string | null;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,38 +31,81 @@ const habitSchema = new Schema<IHabit>(
       ref: "User",
       required: true,
     },
-    title: {
+
+    name: {
       type: String,
       required: true,
+      trim: true,
     },
-    description: {
-      type: String,
-      default: "",
-    },
-    category: {
-      type: String,
-      required: true,
-    },
-    frequency: {
-      type: String,
-      enum: ["daily", "weekly", "monthly"],
-      default: "daily",
-    },
-    color: {
-      type: String,
-      default: "#2E7D32",
-    },
+
     icon: {
       type: String,
       default: "📝",
     },
+
+    color: {
+      type: String,
+      default: "#2E7D32",
+    },
+
+    habitType: {
+      type: String,
+      enum: ["Regular", "OneTime"],
+      default: "Regular",
+    },
+
+    repeat: {
+      type: String,
+      enum: ["Daily", "Weekly", "Monthly"],
+      default: "Daily",
+    },
+
+    weeklyDays: {
+      type: [String],
+      default: [],
+    },
+
+    monthlyDate: {
+      type: Number,
+    },
+
+    monthlyDates: {
+      type: [Number],
+      default: [],
+    },
+
+    timeOfDay: {
+      type: String,
+      enum: ["Morning", "Afternoon", "Evening"],
+      default: "Morning",
+    },
+
+    reminderTime: {
+      type: String,
+    },
+
+    streak: {
+      type: Number,
+      default: 0,
+    },
+
+    lastCompleted: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
-  },
+  }
 );
 
-// Index for faster queries
-habitSchema.index({ userId: 1, createdAt: -1 });
+habitSchema.index({
+  userId: 1,
+  createdAt: -1,
+});
 
-export default mongoose.model<IHabit>("Habit", habitSchema);
+const Habit =
+  mongoose.models.Habit ||
+  mongoose.model<IHabit>("Habit", habitSchema);
+
+export default Habit;

@@ -1,5 +1,4 @@
 import express, { Response } from "express";
-
 import Habit from "../models/Habit";
 
 import {
@@ -60,37 +59,60 @@ router.post(
       );
 
       const {
-        title,
-        description,
-        category,
-        frequency,
-        color,
+        name,
         icon,
+        color,
+        habitType,
+        repeat,
+        weeklyDays,
+        monthlyDate,
+        monthlyDates,
+        timeOfDay,
+        reminderTime,
+        streak,
+        lastCompleted,
       } = req.body;
 
-      if (!title || !category) {
+      if (!name) {
         return res.status(400).json({
-          error:
-            "Title and category are required",
+          error: "Habit name is required",
         });
       }
 
       const habit = new Habit({
         userId: req.userId,
 
-        title,
+        name,
 
-        description,
-
-        category,
-
-        frequency:
-          frequency || "daily",
+        icon: icon || "📝",
 
         color:
           color || "#2E7D32",
 
-        icon: icon || "📝",
+        habitType:
+          habitType || "Regular",
+
+        repeat:
+          repeat || "Daily",
+
+        weeklyDays:
+          weeklyDays || [],
+
+        monthlyDate,
+
+        monthlyDates:
+          monthlyDates || [],
+
+        timeOfDay:
+          timeOfDay || "Morning",
+
+        reminderTime,
+
+        streak:
+          streak ?? 0,
+
+        lastCompleted:
+          lastCompleted ?? null,
       });
 
       await habit.save();
@@ -167,12 +189,18 @@ router.put(
   ) => {
     try {
       const {
-        title,
-        description,
-        category,
-        frequency,
-        color,
+        name,
         icon,
+        color,
+        habitType,
+        repeat,
+        weeklyDays,
+        monthlyDate,
+        monthlyDates,
+        timeOfDay,
+        reminderTime,
+        streak,
+        lastCompleted,
       } = req.body;
 
       const habit =
@@ -182,12 +210,18 @@ router.put(
             userId: req.userId,
           },
           {
-            title,
-            description,
-            category,
-            frequency,
-            color,
+            name,
             icon,
+            color,
+            habitType,
+            repeat,
+            weeklyDays,
+            monthlyDate,
+            monthlyDates,
+            timeOfDay,
+            reminderTime,
+            streak,
+            lastCompleted,
           },
           {
             new: true,
@@ -203,7 +237,6 @@ router.put(
       return res.json({
         message:
           "Habit updated successfully",
-
         habit,
       });
     } catch (error: any) {
@@ -216,6 +249,57 @@ router.put(
         error:
           error.message ||
           "Failed to update habit",
+      });
+    }
+  }
+);
+
+/**
+ * COMPLETE HABIT
+ */
+router.patch(
+  "/:id/complete",
+  authenticateToken,
+  async (
+    req: AuthRequest,
+    res: Response
+  ) => {
+    try {
+      const habit =
+        await Habit.findOne({
+          _id: req.params.id,
+          userId: req.userId,
+        });
+
+      if (!habit) {
+        return res.status(404).json({
+          error: "Habit not found",
+        });
+      }
+
+      habit.streak =
+        (habit.streak || 0) + 1;
+
+      habit.lastCompleted =
+        new Date().toISOString();
+
+      await habit.save();
+
+      return res.json({
+        message:
+          "Habit completed",
+        habit,
+      });
+    } catch (error: any) {
+      console.error(
+        "❌ COMPLETE HABIT ERROR:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          error.message ||
+          "Failed to complete habit",
       });
     }
   }
