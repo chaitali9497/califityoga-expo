@@ -257,53 +257,76 @@ router.put(
 /**
  * COMPLETE HABIT
  */
-router.patch(
+/**
+
+* COMPLETE HABIT
+  */
+  router.patch(
   "/:id/complete",
   authenticateToken,
   async (
-    req: AuthRequest,
-    res: Response
+  req: AuthRequest,
+  res: Response
   ) => {
-    try {
-      const habit =
-        await Habit.findOne({
-          _id: req.params.id,
-          userId: req.userId,
-        });
+  try {
+  const habit =
+  await Habit.findOne({
+  _id: req.params.id,
+  userId: req.userId,
+  });
 
-      if (!habit) {
-        return res.status(404).json({
-          error: "Habit not found",
-        });
-      }
-
-      habit.streak =
-        (habit.streak || 0) + 1;
-
-      habit.lastCompleted =
-        new Date().toISOString();
-
-      await habit.save();
-
-      return res.json({
-        message:
-          "Habit completed",
-        habit,
-      });
-    } catch (error: any) {
-      console.error(
-        "❌ COMPLETE HABIT ERROR:",
-        error
-      );
-
-      return res.status(500).json({
-        error:
-          error.message ||
-          "Failed to complete habit",
-      });
-    }
+  if (!habit) {
+  return res.status(404).json({
+  error: "Habit not found",
+  });
   }
-);
+
+  const today =
+  new Date().toISOString();
+
+  habit.streak =
+  (habit.streak || 0) + 1;
+
+  habit.longestStreak = Math.max(
+  habit.longestStreak || 0,
+  habit.streak
+  );
+
+  habit.lastCompleted =
+  today;
+
+  if (!habit.completionHistory) {
+  habit.completionHistory = [];
+  }
+
+  habit.completionHistory.push(
+  new Date()
+  );
+
+  await habit.save();
+
+  return res.json({
+  message:
+  "Habit completed successfully",
+  habit,
+  });
+  } catch (error: any) {
+  console.error(
+  "❌ COMPLETE HABIT ERROR:",
+  error
+  );
+
+  return res.status(500).json({
+  error:
+  error.message ||
+  "Failed to complete habit",
+  });
+  }
+  }
+  );
+
+
+
 
 /**
  * DELETE HABIT

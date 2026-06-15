@@ -17,8 +17,13 @@ export interface IHabit extends Document {
   timeOfDay: "Morning" | "Afternoon" | "Evening";
   reminderTime?: string;
 
-  streak: number;
-  lastCompleted?: string | null;
+streak: number;
+
+longestStreak: number;
+
+lastCompleted?: string | null;
+
+completionHistory: Date[];
 
   createdAt: Date;
   updatedAt: Date;
@@ -88,6 +93,15 @@ const habitSchema = new Schema<IHabit>(
       type: Number,
       default: 0,
     },
+    longestStreak: {
+  type: Number,
+  default: 0,
+},
+
+completionHistory: {
+  type: [Date],
+  default: [],
+},
 
     lastCompleted: {
       type: String,

@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/src/theme";
 import { useRouter } from "expo-router";
 import { getApiErrorMessage, register } from "@/src/services/authService";
+import { useAuth } from "@/src/context/AuthContext";
 
 export default function SignUpScreen() {
   const [name, setName] = useState("");
@@ -22,6 +23,7 @@ export default function SignUpScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
+  const { setAuth } = useAuth();
 
   const handleSignUp = async () => {
     if (!agree) return;
@@ -30,7 +32,11 @@ export default function SignUpScreen() {
     setErrorMessage("");
 
     try {
-      await register({ name, email, password });
+      const response = await register({ name, email, password });
+
+      // Save auth token and user data
+      await setAuth(response.token, response.user);
+
       setLoading(false);
       router.replace("/(onboarding)/step1");
     } catch (error) {
@@ -84,7 +90,11 @@ export default function SignUpScreen() {
       {/* Password */}
       <Text style={styles.label}>Password</Text>
       <View style={styles.inputBox}>
-        <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
+        <Ionicons
+          name="lock-closed-outline"
+          size={18}
+          color={colors.textMuted}
+        />
         <TextInput
           placeholder="Password"
           placeholderTextColor={colors.textMuted}
@@ -102,7 +112,9 @@ export default function SignUpScreen() {
         </TouchableOpacity>
       </View>
 
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
 
       {/* Terms */}
       <TouchableOpacity
@@ -114,15 +126,14 @@ export default function SignUpScreen() {
           {agree && <Ionicons name="checkmark" size={14} color="#fff" />}
         </View>
         <Text style={styles.termsText}>
-          I agree to Habitly{" "}
-          <Text style={styles.link}>Terms & Conditions</Text>.
+          I agree to Habitly <Text style={styles.link}>Terms & Conditions</Text>
+          .
         </Text>
       </TouchableOpacity>
 
       {/* Sign In */}
       <Text style={styles.signInText}>
-        Already have an account?{" "}
-        <Text style={styles.link}>Sign in</Text>
+        Already have an account? <Text style={styles.link}>Sign in</Text>
       </Text>
 
       {/* OR */}
@@ -160,7 +171,9 @@ export default function SignUpScreen() {
         <View style={styles.overlay}>
           <View style={styles.loaderBox}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Waking server and creating account...</Text>
+            <Text style={styles.loadingText}>
+              Waking server and creating account...
+            </Text>
           </View>
         </View>
       </Modal>

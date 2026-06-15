@@ -17,6 +17,7 @@ import MonthlySelector from "@/src/components/MonthlySelector";
 import WeeklySelector from "@/src/components/WeeklySelector";
 import { useHabits } from "@/src/context/HabitContext";
 import { Habit } from "@/src/types/Habit";
+import { createHabit } from "@/src/services/habitService";
 
 /* ---------- ICONS ---------- */
 const ICONS = [
@@ -99,7 +100,8 @@ export default function CreateRegularHabit() {
   const [search, setSearch] = useState("");
   const [tempIcon, setTempIcon] = useState(icon);
 
-  const saveHabit = () => {
+  const saveHabit = async () => {
+  try {
     if (!habitName.trim()) return;
 
     if (repeat === "Weekly" && weeklyDays.length === 0) {
@@ -123,24 +125,70 @@ export default function CreateRegularHabit() {
       color,
       habitType,
       repeat,
-      weeklyDays: repeat === "Weekly" ? weeklyDays : undefined,
+
+      weeklyDays:
+        repeat === "Weekly"
+          ? weeklyDays
+          : undefined,
+
       monthlyDate:
-        repeat === "Monthly" && monthlyMode === "Single"
+        repeat === "Monthly" &&
+        monthlyMode === "Single"
           ? monthlyDate
           : undefined,
+
       monthlyDates:
-        repeat === "Monthly" && monthlyMode === "Multiple"
+        repeat === "Monthly" &&
+        monthlyMode === "Multiple"
           ? monthlyDates
           : undefined,
+
       timeOfDay: time,
+
       streak: 0,
+
+      lastCompleted: null,
     };
 
-    console.log("Saving habit:", habit);
+    console.log(
+      "📤 Sending habit:",
+      habit
+    );
 
+    const response =
+      await createHabit(habit);
+
+    console.log(
+      "✅ MongoDB Saved:",
+      response
+    );
+
+    // local state
     addHabit(habit);
+
+    alert(
+      "Habit created successfully"
+    );
+
     router.back();
-  };
+  } catch (error: any) {
+    console.error(
+      "❌ CREATE HABIT ERROR:",
+      error
+    );
+
+    if (error.response) {
+      console.log(
+        "❌ Backend Response:",
+        error.response.data
+      );
+    }
+
+    alert(
+      "Failed to save habit"
+    );
+  }
+};
 
   return (
     <>

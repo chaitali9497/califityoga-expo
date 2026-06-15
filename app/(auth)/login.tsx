@@ -12,10 +12,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getApiErrorMessage, login } from "@/src/services/authService";
+import { useAuth } from "@/src/context/AuthContext";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { setAuth } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +31,11 @@ export default function LoginScreen() {
     setErrorMessage("");
 
     try {
-      await login({ email, password });
+      const response = await login({ email, password });
+
+      // Save auth token and user data
+      await setAuth(response.token, response.user);
+
       setLoading(false);
       router.replace("/(tabs)/home");
     } catch (error) {
@@ -95,7 +101,9 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
 
       {/* Remember + Forgot */}
       <View style={styles.row}>
@@ -144,7 +152,9 @@ export default function LoginScreen() {
         <View style={styles.overlay}>
           <View style={styles.loaderBox}>
             <ActivityIndicator size="large" color="#2E7D32" />
-            <Text style={styles.loadingText}>Waking server and signing in...</Text>
+            <Text style={styles.loadingText}>
+              Waking server and signing in...
+            </Text>
           </View>
         </View>
       </Modal>

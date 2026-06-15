@@ -1,8 +1,9 @@
 import { isAxiosError } from "axios";
+import { API_ENDPOINTS } from "../config/api";
 import axiosInstance from "../config/axiosInstance";
 
 type AuthPayload = {
-  name: string; // Optional for login, required for registration
+  name?: string; // Optional for login, required for registration
   email: string;
   password: string;
 };
@@ -16,6 +17,7 @@ const getApiErrorMessage = (error: unknown) => {
   if (isAxiosError<ApiErrorResponse>(error)) {
     return (
       error.response?.data?.message ||
+      //error.response?.data?.details ||
       error.response?.data?.error ||
       "Request failed. Please try again."
     );
@@ -29,7 +31,7 @@ const getApiErrorMessage = (error: unknown) => {
 };
 
 export const login = async ({ email, password }: AuthPayload) => {
-  const response = await axiosInstance.post("/api/auth/login", {
+  const response = await axiosInstance.post(API_ENDPOINTS.AUTH.LOGIN, {
     email: email.trim(),
     password,
   });
@@ -37,8 +39,9 @@ export const login = async ({ email, password }: AuthPayload) => {
   return response.data;
 };
 
-export const register = async ({ email, password }: AuthPayload) => {
-  const response = await axiosInstance.post("/api/auth/register", {
+export const register = async ({ name, email, password }: AuthPayload) => {
+  const response = await axiosInstance.post(API_ENDPOINTS.AUTH.REGISTER, {
+    name: name?.trim(),
     email: email.trim(),
     password,
   });

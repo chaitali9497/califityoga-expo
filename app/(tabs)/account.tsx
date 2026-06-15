@@ -1,7 +1,10 @@
 import { colors } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, {
+  useEffect,
+  useState,
+} from "react";
 import {
     Alert,
     Dimensions,
@@ -12,6 +15,11 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import {
+  getUserData,
+  clearAllAuth,
+} from "@/src/store/authStorage";
+
 
 const { width } = Dimensions.get("window");
 
@@ -87,15 +95,39 @@ export default function AccountScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [user, setUser] = useState({name: "", email: "",});
+
+  useEffect(() => {
+  const loadUser = async () => {
+    try {
+      const userData =
+        await getUserData();
+
+      if (userData) {
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error(
+        "Error loading user:",
+        error
+      );
+    }
+  };
+
+  loadUser();
+}, []);
 
   const handleLogout = () => {
     setShowLogoutModal(true);
   };
 
-  const confirmLogout = () => {
-    setShowLogoutModal(false);
-    router.replace("/(auth)/login");
-  };
+const confirmLogout = async () => {
+  await clearAllAuth();
+
+  setShowLogoutModal(false);
+
+  router.replace("/(auth)/login");
+};
 
   return (
     <ScrollView
@@ -148,7 +180,7 @@ export default function AccountScreen() {
                 color: colors.textPrimary,
               }}
             >
-              John Doe
+              {user.name || "User"}
             </Text>
             <Text
               style={{
@@ -157,7 +189,7 @@ export default function AccountScreen() {
                 marginTop: 4,
               }}
             >
-              john.doe@example.com
+              {user.email || "No Email"}
             </Text>
           </View>
           <TouchableOpacity

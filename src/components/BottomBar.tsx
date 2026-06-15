@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+ 
+
 const TABS = [
   {
     key: "Home",
@@ -52,6 +54,16 @@ export default function BottomBar() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+
+  // Hide bottom bar on specific screens
+  const hiddenRoutes = [
+    "/CreateRegularHabit",
+    "/(tabs)/CreateRegularHabit",
+  ];
+
+  if (hiddenRoutes.includes(pathname)) {
+    return null;
+  }
 
   const activeTab = useMemo(() => {
     if (pathname.includes("/home")) return "Home";

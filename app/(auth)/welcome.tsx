@@ -1,7 +1,7 @@
 import * as Google from "expo-auth-session/providers/google";
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -18,6 +18,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: "YOUR_EXPO_CLIENT_ID",
@@ -31,110 +32,91 @@ export default function WelcomeScreen() {
       if (authentication) {
         console.log("Google Token:", authentication.accessToken);
       }
-      //  Send token to backend here
+      // Send token to your backend here
     }
   }, [response]);
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#F8FBF8" }}
+      style={styles.screen}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom + 20,
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={[
-            styles.container,
-            {
-              paddingTop: insets.top,
-              paddingBottom: insets.bottom,
-            },
-          ]}
-        >
-          {/* Logo */}
-          <Image
-            source={require("../../assets/images/logo.png")}
-            style={styles.logo}
-          />
+        {/* Logo */}
+        <Image
+          source={require("../../assets/images/logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-          {/* Content */}
-          <View style={styles.card}>
-            <Text style={styles.title}>Let’s Get Started</Text>
-            <Text style={styles.subtitle}>
-              Build healthy habits with Califitoga
-            </Text>
+        {/* Card */}
+        <View style={styles.card}>
+          <Text style={styles.title}>Let’s Get Started</Text>
+          <Text style={styles.subtitle}>
+            Build healthy habits with Califitoga
+          </Text>
 
-            {/* Google Button */}
-            <Pressable
-              onPress={() => promptAsync()}
-              style={({ pressed }) => [
-                styles.socialButton,
-                {
-                  backgroundColor: pressed ? "#EEF7EE" : "#FFFFFF",
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                },
-              ]}
-            >
-              <Text style={styles.socialText}>🔍 Continue with Google</Text>
-            </Pressable>
+          {/* Continue with Google */}
+          <Pressable
+            onPress={() => promptAsync()}
+            disabled={!request}
+            style={({ pressed }) => [
+              styles.socialButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.socialText}>🔍 Continue with Google</Text>
+          </Pressable>
 
-            {/* Facebook (UI only) */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.socialButton,
-                {
-                  backgroundColor: pressed ? "#EEF7EE" : "#FFFFFF",
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                },
-              ]}
-            >
-              <Text style={styles.socialText}>📘 Continue with Facebook</Text>
-            </Pressable>
+          {/* Sign Up */}
+          <Pressable
+            onPress={() => router.push("./signup")}
+            style={({ pressed }) => [
+              styles.socialButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.socialText}>📝 Sign Up</Text>
+          </Pressable>
 
-            {/* Divider */}
-            <Text style={styles.or}>or</Text>
-
-            {/* Auth Buttons */}
-            <Link href="./signup" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.primaryBtn,
-                  {
-                    backgroundColor: pressed ? "#1B5E20" : "#2E7D32",
-                  },
-                ]}
-              >
-                <Text style={styles.primaryText}>Create Account</Text>
-              </Pressable>
-            </Link>
-
-            <Link href="./login" asChild>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.secondaryBtn,
-                  {
-                    backgroundColor: pressed ? "#E8F5E8" : "#FFFFFF",
-                  },
-                ]}
-              >
-                <Text style={styles.secondaryText}>Sign In</Text>
-              </Pressable>
-            </Link>
-          </View>
-
-          {/* Footer */}
-          <Text style={styles.footer}>Privacy Policy · Terms of Service</Text>
+          {/* Login */}
+          <Pressable
+            onPress={() => router.push("./login")}
+            style={({ pressed }) => [
+              styles.socialButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.socialText}>🔐 Login</Text>
+          </Pressable>
         </View>
+
+        {/* Footer */}
+        <Text style={styles.footer}>Privacy Policy · Terms of Service</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
+    backgroundColor: "#F8FBF8",
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
   },
@@ -148,6 +130,7 @@ const styles = StyleSheet.create({
 
   card: {
     width: "100%",
+    maxWidth: 420,
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
     padding: 24,
@@ -177,58 +160,35 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
 
+  // Same design for all three buttons
   socialButton: {
-    height: 52,
+    width: "100%",
+    height: 54,
     borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#E8F5E8",
+    borderColor: "#2E7D32",
+    backgroundColor: "#2E7D32",
+  },
+
+  buttonPressed: {
+    backgroundColor: "#1B5E20",
+    transform: [{ scale: 0.97 }],
   },
 
   socialText: {
-    color: "#2E7D32",
+    color: "#FFFFFF",
     fontWeight: "600",
-  },
-
-  or: {
-    textAlign: "center",
-    marginVertical: 10,
-    color: "#999",
-  },
-
-  primaryBtn: {
-    height: 54,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-  },
-
-  primaryText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-
-  secondaryBtn: {
-    height: 54,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 12,
-    borderWidth: 1.5,
-    borderColor: "#2E7D32",
-  },
-
-  secondaryText: {
-    color: "#2E7D32",
-    fontWeight: "600",
+    fontSize: 15,
   },
 
   footer: {
-    marginTop: 20,
+    marginTop: 24,
+    marginBottom: 20,
     color: "#8A9B8A",
     fontSize: 13,
+    textAlign: "center",
   },
 });
