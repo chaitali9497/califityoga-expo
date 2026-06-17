@@ -1,59 +1,121 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
 import { Habit } from "@/src/types/Habit";
-import { loadHabits, saveHabits } from "@/src/store/habitStorage";
+
+import {
+  getAllHabits,
+  createHabit as createHabitAPI,
+  completeHabit as completeHabitAPI,
+} from "@/src/services/habitService";
 
 type HabitContextType = {
   habits: Habit[];
-  addHabit: (habit: Habit) => void;
-  completeHabit: (id: string) => void;
+
+  loading: boolean;
+
+  refreshHabits: () => Promise<void>;
+
+  addHabit: (
+    habit: Habit
+  ) => Promise<void>;
+
+  completeHabit: (
+    id: string
+  ) => Promise<void>;
 };
 
-const HabitContext = createContext<HabitContextType>(null as any);
+const HabitContext =
+  createContext<HabitContextType>(
+    null as any
+  );
 
-export const HabitProvider = ({ children }: { children: React.ReactNode }) => {
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+export const HabitProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const [habits, setHabits] =
+    useState<Habit[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const refreshHabits =
+    async () => {
+      try {
+        const data =
+          await getAllHabits();
+
+        setHabits(
+          Array.isArray(data)
+            ? data
+            : data.habits || []
+        );
+      } catch (error) {
+        console.error(
+          "Failed to load habits:",
+          error
+        );
+      }
+    };
 
   useEffect(() => {
     const init = async () => {
-      const stored = await loadHabits();
-      if (stored) {
-        setHabits(stored);
-      }
-      setIsLoaded(true);
+      await refreshHabits();
+      setLoading(false);
     };
+
     init();
   }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
-      saveHabits(habits);
+  const addHabit = async (
+    habit: Habit
+  ) => {
+    try {
+      await createHabitAPI(habit);
+
+      await refreshHabits();
+    } catch (error) {
+      console.error(
+        "Failed to create habit:",
+        error
+      );
     }
-  }, [habits, isLoaded]);
-
-  const addHabit = (habit: Habit) => {
-    setHabits((prev) => [...prev, habit]);
   };
 
-  const completeHabit = (id: string) => {
-    setHabits((prev) =>
-      prev.map((h) =>
-        h.id === id
-          ? {
-              ...h,
-              streak: h.streak + 1,
-              lastCompleted: new Date().toISOString(),
-            }
-          : h
-      )
-    );
-  };
+  const completeHabit =
+    async (id: string) => {
+      try {
+        await completeHabitAPI(id);
+
+        await refreshHabits();
+      } catch (error) {
+        console.error(
+          "Failed to complete habit:",
+          error
+        );
+      }
+    };
 
   return (
-    <HabitContext.Provider value={{ habits, addHabit, completeHabit }}>
+    <HabitContext.Provider
+      value={{
+        habits,
+        loading,
+        refreshHabits,
+        addHabit,
+        completeHabit,
+      }}
+    >
       {children}
     </HabitContext.Provider>
   );
 };
 
-export const useHabits = () => useContext(HabitContext);
+export const useHabits = () =>
+  useContext(HabitContext);

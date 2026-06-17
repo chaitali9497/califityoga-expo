@@ -1,15 +1,19 @@
 import { useHabits } from "@/src/context/HabitContext";
 import { colors } from "@/src/theme";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-    Dimensions,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { useAuth } from "@/src/context/AuthContext";
+import { getReport } from "@/src/services/reportService";
 
 const { width } = Dimensions.get("window");
+
+
 
 const TABS = {
   TODAY: "Today",
@@ -23,43 +27,64 @@ const TABS = {
 type TabKey = keyof typeof TABS;
 
 export default function ReportScreen() {
+
+type ReportData = {
+  totalHabits: number;
+  completedToday: number;
+  completionRate: number;
+  currentStreak: number;
+  longestStreak: number;
+  perfectDays: number;
+};
+
   const { habits } = useHabits();
   const [selectedTab, setSelectedTab] = useState<TabKey>("THIS_WEEK");
+  const { user } = useAuth();
+ const [report, setReport] =
+  useState<ReportData | null>(
+    null
+  );
 
-  const stats = useMemo(() => {
-    const currentDate = new Date();
-    const completionRate =
-      habits.length > 0
-        ? Math.round(
-            (habits.filter((h) => h.lastCompleted).length / habits.length) *
-              100,
-          )
-        : 0;
-    const totalCompletions = habits.reduce(
-      (sum, h) => sum + (h.streak || 0),
-      0,
-    );
-    const perfectDays = Math.floor(
-      totalCompletions / Math.max(habits.length, 1),
-    );
+  useEffect(() => {
+    const loadReport = async () => {
+      try {
+        const data = await getReport();
 
-    return {
-      streak:
-        habits.length > 0
-          ? Math.max(...habits.map((h) => h.streak || 0), 0)
-          : 0,
-      completionRate,
-      totalHabits: habits.length,
-      perfectDays,
+        setReport(data);
+      } catch (error) {
+        console.error("Failed to load report", error);
+      }
     };
-  }, [habits]);
+
+    loadReport();
+  }, []);
+
+  const stats = {
+    streak: report?.currentStreak || 0,
+
+    completionRate: report?.completionRate || 0,
+
+    totalHabits: report?.totalHabits || 0,
+
+    perfectDays: report?.perfectDays || 0,
+
+    longestStreak: report?.longestStreak || 0,
+  };
 
   // Mock data for charts
-  const chartData = [
-    7, 5, 8, 6, 9, 7, 8, 6, 9, 8, 7, 6, 8, 5, 9, 7, 8, 6, 7, 8, 9, 6,
-  ];
-  const maxValue = Math.max(...chartData);
-  const completionRateData = [70, 72, 68, 75, 78, 72, 75];
+  const chartData = habits.map((habit) => habit.streak || 0);
+
+  const maxValue = Math.max(...chartData, 1);
+
+ const completionRateData = [
+  stats.completionRate,
+  stats.completionRate,
+  stats.completionRate,
+  stats.completionRate,
+  stats.completionRate,
+  stats.completionRate,
+  stats.completionRate,
+];
 
   const renderStatCard = (
     label: string,
@@ -230,7 +255,10 @@ export default function ReportScreen() {
   const renderCalendarStats = () => {
     const daysInMonth = 31; // December
     const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    const completedDays = daysArray.filter(() => Math.random() > 0.4); // Mock data
+    const completedDays = habits.flatMap(
+      (habit) =>
+        habit.completionHistory?.map((date) => new Date(date).getDate()) || [],
+    );
 
     return (
       <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
@@ -243,7 +271,13 @@ export default function ReportScreen() {
           }}
         >
           <Text style={{ fontSize: 12, color: colors.textMuted }}>
-            ◀ December 2024 ▶
+           {new Date().toLocaleDateString(
+  "en-US",
+  {
+    month: "long",
+    year: "numeric",
+  }
+)}
           </Text>
         </View>
         <View
@@ -389,7 +423,7 @@ export default function ReportScreen() {
               color: colors.textPrimary,
             }}
           >
-            Report
+            {user?.name ? `${user.name}'s Report` : "Report"}
           </Text>
           <TouchableOpacity>
             <Text style={{ fontSize: 24, color: colors.textSecondary }}>⋯</Text>
@@ -405,7 +439,7 @@ export default function ReportScreen() {
         </View>
         <View style={{ flexDirection: "row" }}>
           {renderStatCard("Habits Completed", stats.totalHabits)}
-          {renderStatCard("Perfect Days", stats.perfectDays)}
+          {renderStatCard("Longest Streak", stats.longestStreak, "days")}
         </View>
       </View>
 
@@ -527,7 +561,7 @@ export default function ReportScreen() {
             Mood Chart
           </Text>
         </View>
-        {renderMoodChart()}
+      {false && renderMoodChart()}
       </View>
     </ScrollView>
   );

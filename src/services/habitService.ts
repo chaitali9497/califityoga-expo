@@ -7,7 +7,7 @@ type ApiErrorResponse = {
   message?: string;
   error?: string;
 };
-
+//get API error message
 const getApiErrorMessage = (error: unknown) => {
   if (isAxiosError<ApiErrorResponse>(error)) {
     return (
@@ -23,7 +23,7 @@ const getApiErrorMessage = (error: unknown) => {
 
   return "Something went wrong. Please try again.";
 };
-
+//get all habits
 export const getAllHabits = async () => {
   const response = await axiosInstance.get(
     API_ENDPOINTS.HABITS.GET_ALL
@@ -31,7 +31,7 @@ export const getAllHabits = async () => {
 
   return response.data;
 };
-
+//create habit
 export const createHabit = async (
   habit: Habit
 ) => {
@@ -42,7 +42,19 @@ export const createHabit = async (
 
   return response.data;
 };
+//handle complete habit
+export const completeHabit = async (
+id: string
+) => {
+const response =
+await axiosInstance.patch(
+`${API_ENDPOINTS.HABITS.GET_BY_ID(id)}/complete`
+);
 
+return response.data;
+};
+
+//handle get habit by id, update habit, and delete habit
 export const getHabitById = async (
   id: string
 ) => {
