@@ -1,5 +1,6 @@
 export type Habit = {
-  id: string;
+   _id?: string;
+  id?: string;
 
   name: string;
   icon: string;

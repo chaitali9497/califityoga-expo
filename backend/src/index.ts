@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import authRoutes from "./routes/authRoutes";
 import habitRoutes from "./routes/habitRoutes";
 import reportRoutes from "./routes/reportRoutes";
+import moodRoutes from "./routes/moodRoutes";
 
 dotenv.config();
 

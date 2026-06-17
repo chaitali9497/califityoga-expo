@@ -95,8 +95,11 @@ export default function HomeScreen() {
 
           {filteredHabits.map((habit) => (
             <TouchableOpacity
-              key={habit.id}
-              onPress={() => completeHabit(habit.id)}
+             key={habit._id || habit.id}
+             onPress={() =>
+                    completeHabit(habit._id || habit.id || ""
+  )
+}
               activeOpacity={0.85}
               style={[styles.card, { backgroundColor: habit.color }]}
             >

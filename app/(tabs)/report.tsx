@@ -10,6 +10,11 @@ import {
 } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
 import { getReport } from "@/src/services/reportService";
+import Svg, {
+  Line,
+  Path,
+  Circle,
+} from "react-native-svg";
 
 const { width } = Dimensions.get("window");
 
@@ -192,9 +197,9 @@ type ReportData = {
             overflow: "hidden",
           }}
         >
-          <svg width="100%" height="100%" viewBox={`0 0 ${width - 32} 120`}>
+          <Svg width="100%" height="100%" viewBox={`0 0 ${width - 32} 120`}>
             {/* Grid lines */}
-            <line
+            <Line
               x1="0"
               y1="30"
               x2={width - 32}
@@ -202,7 +207,7 @@ type ReportData = {
               stroke={colors.border}
               strokeWidth="1"
             />
-            <line
+            <Line
               x1="0"
               y1="60"
               x2={width - 32}
@@ -212,7 +217,7 @@ type ReportData = {
             />
 
             {/* Path */}
-            <path
+            <Path
               d={`M ${points.map((p) => `${p.x},${p.y}`).join(" L ")}`}
               stroke={colors.primary}
               strokeWidth="2"
@@ -220,14 +225,14 @@ type ReportData = {
             />
 
             {/* Fill area */}
-            <path
+            <Path
               d={`M ${points[0].x},${points[0].y} L ${points.map((p) => `${p.x},${p.y}`).join(" L ")} L ${points[points.length - 1].x},120 L 0,120 Z`}
               fill={`${colors.primary}40`}
             />
 
             {/* Points */}
             {points.map((point, i) => (
-              <circle
+              <Circle
                 key={i}
                 cx={point.x}
                 cy={point.y}
@@ -239,7 +244,7 @@ type ReportData = {
                 strokeWidth="2"
               />
             ))}
-          </svg>
+          </Svg>
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
           {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
