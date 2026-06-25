@@ -8,14 +8,12 @@ export interface IMood
   userId: mongoose.Types.ObjectId;
 
   date: string;
-
   mood: string;
-
   feeling?: string;
-
   note?: string;
 
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const moodSchema =
@@ -39,10 +37,12 @@ const moodSchema =
 
       feeling: {
         type: String,
+        default: "",
       },
 
       note: {
         type: String,
+        default: "",
       },
     },
     {
@@ -50,7 +50,17 @@ const moodSchema =
     }
   );
 
-export default mongoose.model<IMood>(
-  "Mood",
-  moodSchema
+// One mood entry per user per date
+moodSchema.index(
+  { userId: 1, date: 1 },
+  { unique: true }
 );
+
+const Mood =
+  mongoose.models.Mood ||
+  mongoose.model<IMood>(
+    "Mood",
+    moodSchema
+  );
+
+export default Mood;

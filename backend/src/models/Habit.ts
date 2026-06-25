@@ -1,6 +1,10 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, {
+  Schema,
+  Document,
+} from "mongoose";
 
-export interface IHabit extends Document {
+export interface IHabit
+  extends Document {
   userId: mongoose.Types.ObjectId;
 
   name: string;
@@ -17,13 +21,10 @@ export interface IHabit extends Document {
   timeOfDay: "Morning" | "Afternoon" | "Evening";
   reminderTime?: string;
 
-streak: number;
-
-longestStreak: number;
-
-lastCompleted?: string | null;
-
-completionHistory: Date[];
+  streak: number;
+  longestStreak: number;
+  lastCompleted?: string | null;
+  completionHistory?: Date[];
 
   createdAt: Date;
   updatedAt: Date;
@@ -81,7 +82,11 @@ const habitSchema = new Schema<IHabit>(
 
     timeOfDay: {
       type: String,
-      enum: ["Morning", "Afternoon", "Evening"],
+      enum: [
+        "Morning",
+        "Afternoon",
+        "Evening",
+      ],
       default: "Morning",
     },
 
@@ -93,15 +98,16 @@ const habitSchema = new Schema<IHabit>(
       type: Number,
       default: 0,
     },
-    longestStreak: {
-  type: Number,
-  default: 0,
-},
 
-completionHistory: {
-  type: [Date],
-  default: [],
-},
+    longestStreak: {
+      type: Number,
+      default: 0,
+    },
+
+    completionHistory: {
+      type: [Date],
+      default: [],
+    },
 
     lastCompleted: {
       type: String,
@@ -120,6 +126,9 @@ habitSchema.index({
 
 const Habit =
   mongoose.models.Habit ||
-  mongoose.model<IHabit>("Habit", habitSchema);
+  mongoose.model<IHabit>(
+    "Habit",
+    habitSchema
+  );
 
 export default Habit;

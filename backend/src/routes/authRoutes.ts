@@ -3,7 +3,11 @@ import express, {
   Response,
 } from "express";
 
-import { generateToken } from "../middleware/auth";
+import {
+  generateToken,
+  authenticateToken,
+  AuthRequest,
+} from "../middleware/auth";
 
 import User from "../models/User";
 
@@ -65,9 +69,7 @@ router.post(
       return res.status(201).json({
         message:
           "User registered successfully",
-
         token,
-
         user: {
           id: user._id,
           email: user.email,
@@ -145,9 +147,7 @@ router.post(
       return res.json({
         message:
           "Login successful",
-
         token,
-
         user: {
           id: user._id,
           email: user.email,
@@ -164,6 +164,47 @@ router.post(
         error:
           error.message ||
           "Login failed",
+      });
+    }
+  }
+);
+
+/**
+ * GET PROFILE
+ */
+router.get(
+  "/profile",
+  authenticateToken,
+  async (
+    req: AuthRequest,
+    res: Response
+  ) => {
+    try {
+      const user = await User.findById(
+        req.userId
+      ).select("-password");
+
+      if (!user) {
+        return res.status(404).json({
+          error: "User not found",
+        });
+      }
+
+      return res.json({
+        id: user._id,
+        email: user.email,
+        name: user.name,
+      });
+    } catch (error: any) {
+      console.error(
+        "❌ PROFILE ERROR:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          error.message ||
+          "Failed to fetch profile",
       });
     }
   }

@@ -5,13 +5,12 @@ import mongoose from "mongoose";
 
 import authRoutes from "./routes/authRoutes";
 import habitRoutes from "./routes/habitRoutes";
-import reportRoutes from "./routes/reportRoutes";
 import moodRoutes from "./routes/moodRoutes";
+import reportRoutes from "./routes/reportRoutes";
 
 dotenv.config();
 
 const app = express();
-
 const PORT = process.env.PORT || 5000;
 
 const MONGODB_URI =
@@ -33,32 +32,19 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
-
-// Debug middleware
-app.use((req, res, next) => {
-  console.log(
-    `➡️ ${req.method} ${req.url}`
-  );
-
-  console.log("📦 BODY:", req.body);
-
-  next();
-});
-
-// Routes
-app.use("/api/auth", authRoutes);
-
-app.use("/api/habits", habitRoutes);
-app.use("/api/reports", reportRoutes);
+// Debug middleware only in development
+if (process.env.NODE_ENV !== "production") {
+  app.use((req, _res, next) => {
+    console.log(`➡️ ${req.method} ${req.url}`);
+    console.log("📦 BODY:", req.body);
+    next();
+  });
+}
 
 // Health route
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
     timestamp: new Date().toISOString(),
@@ -69,20 +55,23 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/habits", habitRoutes);
+app.use("/api/moods", moodRoutes);
+app.use("/api/reports", reportRoutes);
+
 // Error middleware
 app.use(
   (
     err: any,
-    req: express.Request,
+    _req: express.Request,
     res: express.Response,
-    next: express.NextFunction
+    _next: express.NextFunction
   ) => {
     console.error("❌ SERVER ERROR:", err);
-
     res.status(err.status || 500).json({
-      error:
-        err.message ||
-        "Internal server error",
+      error: err.message || "Internal server error",
     });
   }
 );
@@ -91,47 +80,26 @@ app.use(
 mongoose.set("strictQuery", false);
 
 // Mongo events
-mongoose.connection.on(
-  "connected",
-  () => {
-    console.log(
-      "✅ MongoDB connected"
-    );
-  }
-);
+mongoose.connection.on("connected", () => {
+  console.log("✅ MongoDB connected");
+});
 
-mongoose.connection.on(
-  "error",
-  (err) => {
-    console.error(
-      "❌ MongoDB error:",
-      err
-    );
-  }
-);
+mongoose.connection.on("error", (err) => {
+  console.error("❌ MongoDB error:", err);
+});
 
-mongoose.connection.on(
-  "disconnected",
-  () => {
-    console.warn(
-      "⚠️ MongoDB disconnected"
-    );
-  }
-);
+mongoose.connection.on("disconnected", () => {
+  console.warn("⚠️ MongoDB disconnected");
+});
 
 // Start server
 const startServer = async () => {
   try {
-    await mongoose.connect(
-      MONGODB_URI,
-      {
-        serverSelectionTimeoutMS: 15000,
-      }
-    );
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 15000,
+    });
 
-    console.log(
-      "✅ Database connected"
-    );
+    console.log("✅ Database connected");
 
     app.listen(PORT, () => {
       console.log(
@@ -143,7 +111,6 @@ const startServer = async () => {
       "❌ Failed to connect MongoDB:",
       error
     );
-
     process.exit(1);
   }
 };

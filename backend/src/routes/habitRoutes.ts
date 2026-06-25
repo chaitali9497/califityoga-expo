@@ -1,6 +1,5 @@
 import express, { Response } from "express";
 import Habit from "../models/Habit";
-
 import {
   authenticateToken,
   AuthRequest,
@@ -19,12 +18,11 @@ router.get(
     res: Response
   ) => {
     try {
-      const habits =
-        await Habit.find({
-          userId: req.userId,
-        }).sort({
-          createdAt: -1,
-        });
+      const habits = await Habit.find({
+        userId: req.userId,
+      }).sort({
+        createdAt: -1,
+      });
 
       return res.json(habits);
     } catch (error: any) {
@@ -69,8 +67,6 @@ router.post(
         monthlyDates,
         timeOfDay,
         reminderTime,
-        streak,
-        lastCompleted,
       } = req.body;
 
       if (!name) {
@@ -81,38 +77,22 @@ router.post(
 
       const habit = new Habit({
         userId: req.userId,
-
         name,
-
         icon: icon || "📝",
-
-        color:
-          color || "#2E7D32",
-
-        habitType:
-          habitType || "Regular",
-
-        repeat:
-          repeat || "Daily",
-
-        weeklyDays:
-          weeklyDays || [],
-
+        color: color || "#2E7D32",
+        habitType: habitType || "Regular",
+        repeat: repeat || "Daily",
+        weeklyDays: weeklyDays || [],
         monthlyDate,
-
-        monthlyDates:
-          monthlyDates || [],
-
-        timeOfDay:
-          timeOfDay || "Morning",
-
+        monthlyDates: monthlyDates || [],
+        timeOfDay: timeOfDay || "Morning",
         reminderTime,
 
-        streak:
-          streak ?? 0,
-
-        lastCompleted:
-          lastCompleted ?? null,
+        // Always controlled by backend
+        streak: 0,
+        longestStreak: 0,
+        lastCompleted: null,
+        completionHistory: [],
       });
 
       await habit.save();
@@ -120,7 +100,6 @@ router.post(
       return res.status(201).json({
         message:
           "Habit created successfully",
-
         habit,
       });
     } catch (error: any) {
@@ -149,11 +128,10 @@ router.get(
     res: Response
   ) => {
     try {
-      const habit =
-        await Habit.findOne({
-          _id: req.params.id,
-          userId: req.userId,
-        });
+      const habit = await Habit.findOne({
+        _id: req.params.id,
+        userId: req.userId,
+      });
 
       if (!habit) {
         return res.status(404).json({
@@ -179,6 +157,7 @@ router.get(
 
 /**
  * UPDATE HABIT
+ * Only updates habit details — not streak/report data
  */
 router.put(
   "/:id",
@@ -199,34 +178,29 @@ router.put(
         monthlyDates,
         timeOfDay,
         reminderTime,
-        streak,
-        lastCompleted,
       } = req.body;
 
-      const habit =
-        await Habit.findOneAndUpdate(
-          {
-            _id: req.params.id,
-            userId: req.userId,
-          },
-          {
-            name,
-            icon,
-            color,
-            habitType,
-            repeat,
-            weeklyDays,
-            monthlyDate,
-            monthlyDates,
-            timeOfDay,
-            reminderTime,
-            streak,
-            lastCompleted,
-          },
-          {
-            new: true,
-          }
-        );
+      const habit = await Habit.findOneAndUpdate(
+        {
+          _id: req.params.id,
+          userId: req.userId,
+        },
+        {
+          name,
+          icon,
+          color,
+          habitType,
+          repeat,
+          weeklyDays,
+          monthlyDate,
+          monthlyDates,
+          timeOfDay,
+          reminderTime,
+        },
+        {
+          new: true,
+        }
+      );
 
       if (!habit) {
         return res.status(404).json({
@@ -257,76 +231,76 @@ router.put(
 /**
  * COMPLETE HABIT
  */
-/**
-
-* COMPLETE HABIT
-  */
-  router.patch(
+router.patch(
   "/:id/complete",
   authenticateToken,
   async (
-  req: AuthRequest,
-  res: Response
+    req: AuthRequest,
+    res: Response
   ) => {
-  try {
-  const habit =
-  await Habit.findOne({
-  _id: req.params.id,
-  userId: req.userId,
-  });
+    try {
+      const habit = await Habit.findOne({
+        _id: req.params.id,
+        userId: req.userId,
+      });
 
-  if (!habit) {
-  return res.status(404).json({
-  error: "Habit not found",
-  });
+      if (!habit) {
+        return res.status(404).json({
+          error: "Habit not found",
+        });
+      }
+
+      const now = new Date();
+      const today = now.toISOString().split("T")[0];
+
+      // Prevent completing same habit multiple times in one day
+      if (
+        habit.lastCompleted &&
+        habit.lastCompleted.startsWith(today)
+      ) {
+        return res.json({
+          message:
+            "Habit already completed today",
+          habit,
+        });
+      }
+
+      habit.streak = (habit.streak || 0) + 1;
+
+      habit.longestStreak = Math.max(
+        habit.longestStreak || 0,
+        habit.streak
+      );
+
+      habit.lastCompleted = now.toISOString();
+
+      if (!habit.completionHistory) {
+        habit.completionHistory = [];
+      }
+
+      habit.completionHistory.push(now);
+
+      await habit.save();
+
+      return res.json({
+        message:
+          "Habit completed successfully",
+        habit,
+      });
+    } catch (error: any) {
+      console.error(
+        "❌ COMPLETE HABIT ERROR:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          error.message ||
+          "Failed to complete habit",
+      });
+    }
   }
-
-  const today =
-  new Date().toISOString();
-
-  habit.streak =
-  (habit.streak || 0) + 1;
-
-  habit.longestStreak = Math.max(
-  habit.longestStreak || 0,
-  habit.streak
-  );
-
-  habit.lastCompleted =
-  today;
-
-  if (!habit.completionHistory) {
-  habit.completionHistory = [];
-  }
-
-  habit.completionHistory.push(
-  new Date()
-  );
-
-  await habit.save();
-
-  return res.json({
-  message:
-  "Habit completed successfully",
-  habit,
-  });
-  } catch (error: any) {
-  console.error(
-  "❌ COMPLETE HABIT ERROR:",
-  error
-  );
-
-  return res.status(500).json({
-  error:
-  error.message ||
-  "Failed to complete habit",
-  });
-  }
-  }
-  );
-
-
-
+);
 
 /**
  * DELETE HABIT
