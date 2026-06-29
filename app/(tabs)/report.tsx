@@ -10,15 +10,10 @@ import {
 } from "react-native";
 import { useAuth } from "@/src/context/AuthContext";
 import { getReport } from "@/src/services/reportService";
-import Svg, {
-  Line,
-  Path,
-  Circle,
-} from "react-native-svg";
+import { getMoods } from "@/src/services/moodService";
+import Svg, { Line, Path, Circle } from "react-native-svg";
 
 const { width } = Dimensions.get("window");
-
-
 
 const TABS = {
   TODAY: "Today",
@@ -32,69 +27,92 @@ const TABS = {
 type TabKey = keyof typeof TABS;
 
 export default function ReportScreen() {
-
-type ReportData = {
-  totalHabits: number;
-  completedToday: number;
-  completionRate: number;
-  currentStreak: number;
-  longestStreak: number;
-  perfectDays: number;
-};
+  type ReportData = {
+    totalHabits: number;
+    completedToday: number;
+    completionRate: number;
+    currentStreak: number;
+    longestStreak: number;
+    perfectDays: number;
+  };
 
   const { habits } = useHabits();
   const [selectedTab, setSelectedTab] = useState<TabKey>("THIS_WEEK");
   const { user } = useAuth();
- const [report, setReport] =
-  useState<ReportData | null>(
-    null
-  );
+  const [report, setReport] = useState<ReportData | null>(null);
+  type MoodEntry = {
+  _id?: string;
+  date: string;
+  mood: string;
+  feeling?: string;
+  note?: string;
+};
 
-  useEffect(() => {
-    const loadReport = async () => {
-      try {
-        const data = await getReport();
+const [moods, setMoods] = useState<MoodEntry[]>([]);
 
-        setReport(data);
-      } catch (error) {
-        console.error("Failed to load report", error);
-      }
-    };
+useEffect(() => {
+  const loadData = async () => {
+    try {
+      const [reportData, moodData] = await Promise.all([
+        getReport(),
+        getMoods(),
+      ]);
 
-    loadReport();
-  }, []);
+      setReport(reportData);
+      setMoods(Array.isArray(moodData) ? moodData : []);
+    } catch (error) {
+      console.error("Failed to load report data", error);
+    }
+  };
+
+  loadData();
+}, []);
 
   const stats = {
     streak: report?.currentStreak || 0,
-
     completionRate: report?.completionRate || 0,
-
     totalHabits: report?.totalHabits || 0,
-
     perfectDays: report?.perfectDays || 0,
-
     longestStreak: report?.longestStreak || 0,
   };
 
   // Mock data for charts
-  const chartData = habits.map((habit) => habit.streak || 0);
+// Real chart data from completionHistory
+const last7Days = Array.from({ length: 7 }, (_, index) => {
+  const date = new Date();
+  date.setDate(date.getDate() - (6 - index));
+  return date.toISOString().split("T")[0];
+});
 
-  const maxValue = Math.max(...chartData, 1);
+const chartData = last7Days.map((day) => {
+  let count = 0;
 
- const completionRateData = [
-  stats.completionRate,
-  stats.completionRate,
-  stats.completionRate,
-  stats.completionRate,
-  stats.completionRate,
-  stats.completionRate,
-  stats.completionRate,
-];
+  habits.forEach((habit) => {
+    const completedOnDay =
+      habit.completionHistory?.some((entry) => {
+        const completedDate =
+          new Date(entry)
+            .toISOString()
+            .split("T")[0];
+
+        return completedDate === day;
+      }) || false;
+
+    if (completedOnDay) count += 1;
+  });
+
+  return count;
+});
+
+const maxValue = Math.max(...chartData, 1);
+
+// Completion rate chart can still stay simple for now
+const completionRateData = last7Days.map(() => stats.completionRate);
 
   const renderStatCard = (
     label: string,
     value: string | number,
-    unit?: string,
+    unit?: string
   ) => (
     <View
       style={{
@@ -111,15 +129,11 @@ type ReportData = {
         {label}
       </Text>
       <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-        <Text
-          style={{ fontSize: 24, fontWeight: "700", color: colors.textPrimary }}
-        >
+        <Text style={{ fontSize: 24, fontWeight: "700", color: colors.textPrimary }}>
           {value}
         </Text>
         {unit && (
-          <Text
-            style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 4 }}
-          >
+          <Text style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 4 }}>
             {unit}
           </Text>
         )}
@@ -151,9 +165,7 @@ type ReportData = {
                   style={{
                     width: "60%",
                     height,
-                    backgroundColor: isHighlighted
-                      ? colors.primary
-                      : colors.border,
+                    backgroundColor: isHighlighted ? colors.primary : colors.border,
                     borderRadius: 4,
                   }}
                 />
@@ -161,21 +173,33 @@ type ReportData = {
             );
           })}
         </View>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            paddingHorizontal: 4,
-          }}
-        >
-          <Text style={{ fontSize: 10, color: colors.textMuted }}>S</Text>
-          <Text style={{ fontSize: 10, color: colors.textMuted }}>M</Text>
-          <Text style={{ fontSize: 10, color: colors.textMuted }}>T</Text>
-          <Text style={{ fontSize: 10, color: colors.textMuted }}>W</Text>
-          <Text style={{ fontSize: 10, color: colors.textMuted }}>T</Text>
-          <Text style={{ fontSize: 10, color: colors.textMuted }}>F</Text>
-          <Text style={{ fontSize: 10, color: colors.textMuted }}>S</Text>
-        </View>
+       <View
+  style={{
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+  }}
+>
+  {last7Days.map((day) => {
+    const label = new Date(day).toLocaleDateString("en-US", {
+      weekday: "short",
+    });
+
+    return (
+      <Text
+        key={day}
+        style={{
+          fontSize: 10,
+          color: colors.textMuted,
+          flex: 1,
+          textAlign: "center",
+        }}
+      >
+        {label[0]}
+      </Text>
+    );
+  })}
+</View>
       </View>
     );
   };
@@ -199,58 +223,24 @@ type ReportData = {
         >
           <Svg width="100%" height="100%" viewBox={`0 0 ${width - 32} 120`}>
             {/* Grid lines */}
-            <Line
-              x1="0"
-              y1="30"
-              x2={width - 32}
-              y2="30"
-              stroke={colors.border}
-              strokeWidth="1"
-            />
-            <Line
-              x1="0"
-              y1="60"
-              x2={width - 32}
-              y2="60"
-              stroke={colors.border}
-              strokeWidth="1"
-            />
+            <Line x1="0" y1="30" x2={width - 32} y2="30" stroke={colors.border} strokeWidth="1" />
+            <Line x1="0" y1="60" x2={width - 32} y2="60" stroke={colors.border} strokeWidth="1" />
 
             {/* Path */}
-            <Path
-              d={`M ${points.map((p) => `${p.x},${p.y}`).join(" L ")}`}
-              stroke={colors.primary}
-              strokeWidth="2"
-              fill="none"
-            />
+            <Path d={`M ${points.map((p) => `${p.x},${p.y}`).join(" L ")}`} stroke={colors.primary} strokeWidth="2" fill="none" />
 
             {/* Fill area */}
-            <Path
-              d={`M ${points[0].x},${points[0].y} L ${points.map((p) => `${p.x},${p.y}`).join(" L ")} L ${points[points.length - 1].x},120 L 0,120 Z`}
-              fill={`${colors.primary}40`}
-            />
+            <Path d={`M ${points[0].x},${points[0].y} L ${points.map((p) => `${p.x},${p.y}`).join(" L ")} L ${points[points.length - 1].x},120 L 0,120 Z`} fill={`${colors.primary}40`} />
 
             {/* Points */}
             {points.map((point, i) => (
-              <Circle
-                key={i}
-                cx={point.x}
-                cy={point.y}
-                r="4"
-                fill={
-                  i === points.length - 1 ? colors.primary : colors.background
-                }
-                stroke={colors.primary}
-                strokeWidth="2"
-              />
+              <Circle key={i} cx={point.x} cy={point.y} r="4" fill={i === points.length - 1 ? colors.primary : colors.background} stroke={colors.primary} strokeWidth="2" />
             ))}
           </Svg>
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
           {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
-            <Text key={i} style={{ fontSize: 10, color: colors.textMuted }}>
-              {day}
-            </Text>
+            <Text key={i} style={{ fontSize: 10, color: colors.textMuted }}>{day}</Text>
           ))}
         </View>
       </View>
@@ -258,91 +248,60 @@ type ReportData = {
   };
 
   const renderCalendarStats = () => {
-    const daysInMonth = 31; // December
-    const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    const completedDays = habits.flatMap(
-      (habit) =>
-        habit.completionHistory?.map((date) => new Date(date).getDate()) || [],
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // 0 = Sunday, 1 = Monday ... 6 = Saturday
+    const firstDay = new Date(year, month, 1).getDay();
+
+    // Sunday-first layout
+    const offset = firstDay;
+
+    // only render actual used cells
+    const totalCells = offset + daysInMonth;
+
+    // collect completed dates only for current month/year
+    const completedDays = new Set(
+      habits.flatMap((habit) =>
+        habit.completionHistory
+          ?.map((date) => new Date(date))
+          .filter((d) => d.getFullYear() === year && d.getMonth() === month)
+          .map((d) => d.getDate()) || []
+      )
     );
 
     return (
       <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 12,
-          }}
-        >
-          <Text style={{ fontSize: 12, color: colors.textMuted }}>
-           {new Date().toLocaleDateString(
-  "en-US",
-  {
-    month: "long",
-    year: "numeric",
-  }
-)}
-          </Text>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginBottom: 8,
-          }}
-        >
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-            <Text
-              key={day}
-              style={{
-                fontSize: 10,
-                color: colors.textMuted,
-                width: (width - 32) / 7,
-                textAlign: "center",
-              }}
-            >
-              {day.substring(0, 1)}
-            </Text>
+        {/* Week labels */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+          {["Su", "M", "T", "W", "Th", "F", "Sa"].map((day) => (
+            <Text key={day} style={{ fontSize: 10, color: colors.textMuted, width: (width - 56) / 7, textAlign: "center", fontWeight: "600" }}>{day}</Text>
           ))}
         </View>
-        <View
-          style={{
-            backgroundColor: colors.background,
-            borderRadius: 12,
-            padding: 12,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
+
+        {/* Calendar box */}
+        <View style={{ backgroundColor: colors.background, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
           <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-            {daysArray.map((day) => {
-              const isCompleted = completedDays.includes(day);
+            {Array.from({ length: totalCells }, (_, idx) => {
+              const dayNumber = idx - offset + 1;
+
+              const isDay = dayNumber >= 1 && dayNumber <= daysInMonth;
+
+              const isCompleted = isDay && completedDays.has(dayNumber);
+
+              const isToday = isDay && dayNumber === today;
+
               return (
-                <View
-                  key={day}
-                  style={{
-                    width: (width - 32 - 24) / 7,
-                    aspectRatio: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    marginBottom: 8,
-                    borderRadius: 8,
-                    borderWidth: 1.5,
-                    borderColor: isCompleted ? colors.primary : colors.border,
-                    backgroundColor: isCompleted
-                      ? `${colors.primary}20`
-                      : "transparent",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: isCompleted ? colors.primary : colors.textMuted,
-                    }}
-                  >
-                    {day}
-                  </Text>
+                <View key={idx} style={{ width: (width - 56) / 7, aspectRatio: 1, justifyContent: "center", alignItems: "center", marginBottom: 8 }}>
+                  {isDay ? (
+                    <View style={{ width: 34, height: 34, borderRadius: 17, justifyContent: "center", alignItems: "center", backgroundColor: isToday ? colors.primary : isCompleted ? `${colors.primary}20` : "transparent", borderWidth: isToday ? 0 : isCompleted ? 1.5 : 1, borderColor: isToday ? colors.primary : isCompleted ? colors.primary : colors.border }}>
+                      <Text style={{ fontSize: 12, fontWeight: isToday || isCompleted ? "700" : "500", color: isToday ? colors.white : isCompleted ? colors.primary : colors.textMuted }}>{dayNumber}</Text>
+                    </View>
+                  ) : null}
                 </View>
               );
             })}
@@ -352,82 +311,128 @@ type ReportData = {
     );
   };
 
-  const renderMoodChart = () => {
-    const moods = ["😢", "😕", "😐", "🙂", "😊"];
-    const moodData = [2, 3, 5, 8, 6]; // Mock data
-    const maxMood = Math.max(...moodData);
-
-    return (
-      <View style={{ paddingHorizontal: 16, marginTop: 16, marginBottom: 24 }}>
-        <View
-          style={{
-            height: 150,
-            marginBottom: 12,
-            flexDirection: "row",
-            alignItems: "flex-end",
-            justifyContent: "space-around",
-          }}
-        >
-          {moodData.map((value, index) => {
-            const height = (value / maxMood) * 120;
-            return (
-              <View key={index} style={{ alignItems: "center" }}>
-                <View
-                  style={{
-                    width: 30,
-                    height,
-                    backgroundColor: colors.primary,
-                    borderRadius: 4,
-                    marginBottom: 8,
-                  }}
-                />
-                <Text style={{ fontSize: 20 }}>{moods[index]}</Text>
-              </View>
-            );
-          })}
-        </View>
-        <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
-          {["Su", "M", "T", "W", "Th", "F", "Sa"].map((day, i) => {
-            if (i < moodData.length) {
-              return (
-                <Text
-                  key={day}
-                  style={{ fontSize: 10, color: colors.textMuted }}
-                >
-                  {day}
-                </Text>
-              );
-            }
-          })}
-        </View>
-      </View>
-    );
+ const renderMoodChart = () => {
+  const moodLabels = ["Terrible", "Bad", "Okay", "Good", "Great"];
+  const moodEmojiMap: Record<string, string> = {
+    Terrible: "😢",
+    Bad: "😕",
+    Okay: "😐",
+    Good: "🙂",
+    Great: "😊",
   };
 
+  const moodCounts = {
+    Terrible: 0,
+    Bad: 0,
+    Okay: 0,
+    Good: 0,
+    Great: 0,
+  };
+
+  moods.forEach((entry) => {
+    const mood = entry.mood?.trim();
+    if (
+      mood === "Terrible" ||
+      mood === "Bad" ||
+      mood === "Okay" ||
+      mood === "Good" ||
+      mood === "Great"
+    ) {
+      moodCounts[mood]++;
+    }
+  });
+
+  const moodData = moodLabels.map(
+    (label) => moodCounts[label as keyof typeof moodCounts]
+  );
+
+  const maxMood = Math.max(...moodData, 1);
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 100 }}
+    <View
+      style={{
+        paddingHorizontal: 16,
+        marginTop: 16,
+        marginBottom: 24,
+      }}
     >
-      {/* Header */}
-      <View
-        style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }}
-      >
-        <View
+      {moodData.every((value) => value === 0) ? (
+        <Text
           style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
+            fontSize: 13,
+            color: colors.textMuted,
+            textAlign: "center",
+            marginTop: 8,
           }}
         >
-          <Text
+          No mood data yet
+        </Text>
+      ) : (
+        <>
+          <View
             style={{
-              fontSize: 28,
-              fontWeight: "700",
-              color: colors.textPrimary,
+              height: 150,
+              marginBottom: 12,
+              flexDirection: "row",
+              alignItems: "flex-end",
+              justifyContent: "space-around",
             }}
           >
+            {moodData.map((value, index) => {
+              const height = (value / maxMood) * 120;
+
+              return (
+                <View
+                  key={index}
+                  style={{ alignItems: "center" }}
+                >
+                  <View
+                    style={{
+                      width: 30,
+                      height: height || 4,
+                      backgroundColor: colors.primary,
+                      borderRadius: 4,
+                      marginBottom: 8,
+                    }}
+                  />
+                  <Text style={{ fontSize: 20 }}>
+                    {moodEmojiMap[moodLabels[index]]}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-around",
+            }}
+          >
+            {moodLabels.map((label) => (
+              <Text
+                key={label}
+                style={{
+                  fontSize: 10,
+                  color: colors.textMuted,
+                }}
+              >
+                {label}
+              </Text>
+            ))}
+          </View>
+        </>
+      )}
+    </View>
+  );
+};
+
+  return (
+    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      {/* Header */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text style={{ fontSize: 28, fontWeight: "700", color: colors.textPrimary }}>
             {user?.name ? `${user.name}'s Report` : "Report"}
           </Text>
           <TouchableOpacity>
@@ -460,18 +465,10 @@ type ReportData = {
                 paddingVertical: 8,
                 borderRadius: 6,
                 marginRight: 8,
-                backgroundColor:
-                  selectedTab === key ? colors.primary : colors.inputBg,
+                backgroundColor: selectedTab === key ? colors.primary : colors.inputBg,
               }}
             >
-              <Text
-                style={{
-                  fontSize: 12,
-                  color:
-                    selectedTab === key ? colors.white : colors.textSecondary,
-                  fontWeight: "500",
-                }}
-              >
+              <Text style={{ fontSize: 12, color: selectedTab === key ? colors.white : colors.textSecondary, fontWeight: "500" }}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -482,26 +479,10 @@ type ReportData = {
       {/* Habits Completed Chart */}
       <View style={{ marginBottom: 16 }}>
         <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: colors.textPrimary,
-              }}
-            >
-              Habits Completed
-            </Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Habits Completed</Text>
             <TouchableOpacity>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>
-                {selectedTab} ↓
-              </Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>{selectedTab} ↓</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -511,26 +492,10 @@ type ReportData = {
       {/* Habit Completion Rate */}
       <View style={{ marginBottom: 16 }}>
         <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "600",
-                color: colors.textPrimary,
-              }}
-            >
-              Habit Completion Rate
-            </Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Habit Completion Rate</Text>
             <TouchableOpacity>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>
-                Last 6 Months ↓
-              </Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>Last 6 Months ↓</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -540,15 +505,7 @@ type ReportData = {
       {/* Calendar Stats */}
       <View style={{ marginBottom: 16 }}>
         <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "600",
-              color: colors.textPrimary,
-            }}
-          >
-            Calendar Stats
-          </Text>
+          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Calendar Stats</Text>
         </View>
         {renderCalendarStats()}
       </View>
@@ -556,17 +513,9 @@ type ReportData = {
       {/* Mood Chart */}
       <View style={{ marginBottom: 16 }}>
         <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "600",
-              color: colors.textPrimary,
-            }}
-          >
-            Mood Chart
-          </Text>
+          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Mood Chart</Text>
         </View>
-      {false && renderMoodChart()}
+        {renderMoodChart()}
       </View>
     </ScrollView>
   );

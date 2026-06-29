@@ -1,14 +1,16 @@
 import BottomBar from "@/src/components/BottomBar";
+import { getMoods, saveMood } from "@/src/services/moodService";
 import { colors } from "@/src/theme";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 /* ---------- CONSTANTS ---------- */
@@ -16,11 +18,11 @@ import {
 const BOTTOM_BAR_HEIGHT = 74;
 
 const MOODS = [
-  { key: "great", emoji: "😍", label: "Great" },
-  { key: "good", emoji: "😊", label: "Good" },
-  { key: "okay", emoji: "😐", label: "Okay" },
-  { key: "notGood", emoji: "😢", label: "Not Good" },
-  { key: "bad", emoji: "😠", label: "Bad" },
+  { key: "Great", emoji: "😍", label: "Great" },
+  { key: "Good", emoji: "😊", label: "Good" },
+  { key: "Okay", emoji: "😐", label: "Okay" },
+  { key: "Bad", emoji: "😢", label: "Bad" },
+  { key: "Terrible", emoji: "😠", label: "Terrible" },
 ];
 
 const FEELINGS = [
@@ -75,15 +77,86 @@ const getMoodEmoji = (mood: string) => {
 export default function MoodStatScreen() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [moodData, setMoodData] = useState<
-    Record<string, { mood: string; feeling?: string }>
+    Record<
+      string,
+      {
+        mood: string;
+        feeling?: string;
+        note?: string;
+      }
+    >
   >({});
+
+  const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [showFeelingPicker, setShowFeelingPicker] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const [selectedFeeling, setSelectedFeeling] = useState("");
 
   const daysInMonth = getDaysInMonth(currentDate);
   const firstDay = getFirstDayOfMonth(currentDate);
+  const moodColors = {
+    Great: "#FFE082",
+    Good: "#C8E6C9",
+    Okay: "#E0E0E0",
+    Bad: "#90CAF9",
+    Terrible: "#FFCDD2",
+  };
+
+  const loadMoods = async () => {
+    try {
+      const response = await getMoods();
+
+      const mapped: Record<
+        string,
+        {
+          mood: string;
+          feeling?: string;
+          note?: string;
+        }
+      > = {};
+
+      response.forEach((item: any) => {
+        mapped[item.date] = {
+          mood: item.mood,
+          feeling: item.feeling,
+          note: item.note,
+        };
+      });
+
+      setMoodData(mapped);
+    } catch (error) {
+      console.error("Failed to load moods", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveMoodToBackend = async (
+    dateKey: string,
+    mood: string,
+    feeling?: string,
+    note?: string,
+  ) => {
+    try {
+      await saveMood({
+        date: dateKey,
+        mood,
+        feeling,
+        note,
+      });
+
+      await loadMoods();
+    } catch (error) {
+      console.error("Failed to save mood", error);
+    }
+  };
+
+  useEffect(() => {
+    loadMoods();
+  }, []);
 
   const handlePreviousMonth = () => {
     setCurrentDate(
@@ -98,8 +171,23 @@ export default function MoodStatScreen() {
   };
 
   const handleSelectDay = (day: number) => {
+    const dateKey = getDateKey(currentDate, day);
+
+    const existingMood = moodData[dateKey];
+
     setSelectedDay(day);
-    setShowMoodPicker(true);
+
+    if (existingMood) {
+      setSelectedMood(existingMood.mood);
+
+      setSelectedFeeling(existingMood.feeling || "");
+
+      setNote(existingMood.note || "");
+
+      setShowFeelingPicker(true);
+    } else {
+      setShowMoodPicker(true);
+    }
   };
 
   const handleSelectMood = (mood: string) => {
@@ -109,35 +197,44 @@ export default function MoodStatScreen() {
   };
 
   const handleSelectFeeling = (feeling: string) => {
+    setSelectedFeeling(feeling);
+  };
+
+  const handleSkipFeeling = async () => {
     if (selectedDay !== null && selectedMood) {
       const dateKey = getDateKey(currentDate, selectedDay);
-      setMoodData((prev) => ({
-        ...prev,
-        [dateKey]: { mood: selectedMood, feeling },
-      }));
+
+      await saveMoodToBackend(dateKey, selectedMood, "", note);
     }
     setShowFeelingPicker(false);
     setShowMoodPicker(false);
+    setNote("");
+    setSelectedFeeling("");
     setSelectedDay(null);
     setSelectedMood(null);
   };
 
-  const handleSkipFeeling = () => {
-    if (selectedDay !== null && selectedMood) {
-      const dateKey = getDateKey(currentDate, selectedDay);
-      setMoodData((prev) => ({
-        ...prev,
-        [dateKey]: { mood: selectedMood },
-      }));
+  const handleSaveMood = async () => {
+    if (selectedDay === null || !selectedMood) {
+      return;
     }
+
+    const dateKey = getDateKey(currentDate, selectedDay);
+
+    await saveMoodToBackend(dateKey, selectedMood, selectedFeeling, note);
+
     setShowFeelingPicker(false);
     setShowMoodPicker(false);
+
     setSelectedDay(null);
     setSelectedMood(null);
+    setSelectedFeeling("");
+    setNote("");
   };
 
   const getMoodForDay = (day: number) => {
     const dateKey = getDateKey(currentDate, day);
+
     return moodData[dateKey]?.mood || null;
   };
 
@@ -148,6 +245,20 @@ export default function MoodStatScreen() {
   }
   for (let day = 1; day <= daysInMonth; day++) {
     calendarDays.push(day);
+  }
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text>Loading moods...</Text>
+      </View>
+    );
   }
 
   return (
@@ -204,17 +315,49 @@ export default function MoodStatScreen() {
             const label = mood
               ? MOODS.find((m) => m.key === mood)?.label
               : "Mood";
+            const note = moodData[dateKey]?.note;
 
             return (
               <TouchableOpacity
                 key={day}
-                style={styles.dayCell}
-                onPress={() => handleSelectDay(day)}
+                style={[
+                  styles.dayCell,
+                  {
+                    backgroundColor: mood
+                      ? moodColors[mood as keyof typeof moodColors]
+                      : "#F5F5F5",
+                  },
+                ]}
+                onPress={() => {
+                  const selectedDate = new Date(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth(),
+                    day,
+                  );
+
+                  const today = new Date();
+
+                  today.setHours(0, 0, 0, 0);
+
+                  if (selectedDate <= today) {
+                    handleSelectDay(day);
+                  }
+                }}
               >
                 <Text style={styles.dayEmoji}>{emoji}</Text>
                 <Text style={styles.dayLabel}>{label}</Text>
                 {feeling && <Text style={styles.dayFeeling}>{feeling}</Text>}
                 <Text style={styles.dayNumber}>{day}</Text>
+                {note && (
+                  <Text
+                    style={{
+                      fontSize: 8,
+                      color: "#666",
+                    }}
+                  >
+                    📔
+                  </Text>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -231,7 +374,10 @@ export default function MoodStatScreen() {
           }}
           activeOpacity={1}
         >
-          <View style={styles.modalContent}>
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>How is your mood today?</Text>
 
             <View style={styles.moodGrid}>
@@ -252,25 +398,27 @@ export default function MoodStatScreen() {
 
       {/* ---------- FEELING PICKER MODAL ---------- */}
       <Modal transparent visible={showFeelingPicker} animationType="slide">
-        <TouchableOpacity
-          style={styles.overlay}
-          onPress={() => {
-            setShowFeelingPicker(false);
-          }}
-          activeOpacity={1}
-        >
-          <View style={styles.modalContent}>
+        <View style={styles.overlay}>
+          <View
+            style={styles.modalContent}
+            // consume touches so overlay onPress doesn't fire when interacting inside
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>
-              {selectedMood
-                ? MOODS.find((m) => m.key === selectedMood)?.emoji
-                : ""}{" "}
-              How would you describe
+              {selectedDay && moodData[getDateKey(currentDate, selectedDay)]
+                ? "Edit Mood Entry"
+                : "How would you describe"}
             </Text>
-            <Text style={styles.modalSubtitle}>your feelings?</Text>
+            <Text style={styles.modalSubtitle}>
+              {selectedFeeling
+                ? `Current feeling:\n${selectedFeeling}`
+                : "your feelings?"}
+            </Text>
 
             <ScrollView
               style={styles.feelingsScrollView}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
               <View style={styles.feelingsGrid}>
                 {FEELINGS.map((feeling, idx) => (
@@ -283,16 +431,104 @@ export default function MoodStatScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-            </ScrollView>
 
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={handleSkipFeeling}
+              {selectedDay &&
+                moodData[getDateKey(currentDate, selectedDay)]?.note && (
+                  <View
+                    style={{
+                      backgroundColor: "#F5F5F5",
+                      padding: 12,
+                      borderRadius: 12,
+                      marginBottom: 16,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontWeight: "600",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Previous Note
+                    </Text>
+
+                    <Text>
+                      {moodData[getDateKey(currentDate, selectedDay)]?.note}
+                    </Text>
+                  </View>
+                )}
+
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "600",
+                  marginTop: 20,
+                  marginBottom: 8,
+                  color: colors.textPrimary,
+                }}
+              >
+                Journal Note
+              </Text>
+
+              <TextInput
+                value={note}
+                onChangeText={setNote}
+                placeholder="How was your day?"
+                multiline
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 12,
+                  padding: 12,
+                  minHeight: 100,
+                  marginBottom: 20,
+                  textAlignVertical: "top",
+                }}
+              />
+            </ScrollView>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: 16,
+              }}
             >
-              <Text style={styles.confirmButtonText}>Skip</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  {
+                    flex: 1,
+                    backgroundColor: "#E5E7EB",
+                    marginRight: 8,
+                  },
+                ]}
+                onPress={() => {
+                  setShowFeelingPicker(false);
+                  setSelectedDay(null);
+                  setSelectedMood(null);
+                  setSelectedFeeling("");
+                  setNote("");
+                }}
+              >
+                <Text style={[styles.confirmButtonText, { color: "#111827" }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  {
+                    flex: 1,
+                    marginLeft: 8,
+                  },
+                ]}
+                onPress={handleSaveMood}
+              >
+                <Text style={styles.confirmButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {/* ---------- BOTTOM BAR ---------- */}

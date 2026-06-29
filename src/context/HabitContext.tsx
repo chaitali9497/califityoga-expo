@@ -15,15 +15,11 @@ import {
 
 type HabitContextType = {
   habits: Habit[];
-
   loading: boolean;
-
   refreshHabits: () => Promise<void>;
-
   addHabit: (
     habit: Habit
   ) => Promise<void>;
-
   completeHabit: (
     id: string
   ) => Promise<void>;
@@ -51,23 +47,28 @@ export const HabitProvider = ({
         const data =
           await getAllHabits();
 
-        setHabits(
+        const habitList =
           Array.isArray(data)
             ? data
-            : data.habits || []
-        );
+            : data?.habits || [];
+
+        setHabits(habitList);
       } catch (error) {
         console.error(
           "Failed to load habits:",
           error
         );
+        setHabits([]);
       }
     };
 
   useEffect(() => {
     const init = async () => {
-      await refreshHabits();
-      setLoading(false);
+      try {
+        await refreshHabits();
+      } finally {
+        setLoading(false);
+      }
     };
 
     init();
@@ -78,27 +79,34 @@ export const HabitProvider = ({
   ) => {
     try {
       await createHabitAPI(habit);
-
       await refreshHabits();
     } catch (error) {
       console.error(
         "Failed to create habit:",
         error
       );
+      throw error;
     }
   };
 
   const completeHabit =
     async (id: string) => {
+      if (!id) {
+        console.warn(
+          "completeHabit called without id"
+        );
+        return;
+      }
+
       try {
         await completeHabitAPI(id);
-
         await refreshHabits();
       } catch (error) {
         console.error(
           "Failed to complete habit:",
           error
         );
+        throw error;
       }
     };
 

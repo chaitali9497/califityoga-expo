@@ -12,6 +12,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -53,6 +54,7 @@ const sortOptions = [
 
 export default function MyHabitsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { habits } = useHabits();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSort, setSelectedSort] = useState("All Habits");
@@ -197,7 +199,7 @@ export default function MyHabitsScreen() {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingBottom: 120,
+        paddingBottom: 120 + insets.bottom,
       }}
     >
       <Text style={{ fontSize: 24, marginBottom: 8 }}>📝</Text>
@@ -389,7 +391,7 @@ export default function MyHabitsScreen() {
           data={filteredHabits}
           renderItem={renderHabitCard}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
           scrollEnabled={true}
           showsVerticalScrollIndicator={false}
         />
@@ -400,7 +402,7 @@ export default function MyHabitsScreen() {
         onPress={() => router.push("/(tabs)/CreateRegularHabit")}
         style={{
           position: "absolute",
-          bottom: 90,
+          bottom: 90 + insets.bottom,
           right: 16,
           width: 56,
           height: 56,

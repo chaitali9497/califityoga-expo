@@ -1,15 +1,27 @@
-import { View, Image, ActivityIndicator, StyleSheet } from "react-native";
-import { useEffect } from "react";
+import { useAuth } from "@/src/context/AuthContext";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { ActivityIndicator, Image, StyleSheet, View } from "react-native";
 
 export default function SplashScreen() {
   const router = useRouter();
+  const { isLoading, isLoggedIn } = useAuth();
 
   useEffect(() => {
-    setTimeout(() => {
+    // Wait until auth state is initialized, then route accordingly
+    if (isLoading) return;
+
+    if (isLoggedIn) {
+      router.replace("/(tabs)/home");
+      return;
+    }
+
+    const t = setTimeout(() => {
       router.replace("/(auth)/onboarding");
-    }, 2500);
-  }, []);
+    }, 1200);
+
+    return () => clearTimeout(t);
+  }, [isLoading, isLoggedIn]);
 
   return (
     <View style={styles.container}>

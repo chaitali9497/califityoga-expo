@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /* ---------- CONSTANTS ---------- */
 
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const [timeFilter, setTimeFilter] = useState("All");
 
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { habits, completeHabit } = useHabits();
 
   /* ---------- FILTER LOGIC ---------- */
@@ -39,7 +41,9 @@ export default function HomeScreen() {
     <View style={styles.screen}>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: BOTTOM_BAR_HEIGHT + 80 }}
+        contentContainerStyle={{
+          paddingBottom: BOTTOM_BAR_HEIGHT + insets.bottom + 80,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* ---------- HEADER ---------- */}
@@ -95,11 +99,8 @@ export default function HomeScreen() {
 
           {filteredHabits.map((habit) => (
             <TouchableOpacity
-             key={habit._id || habit.id}
-             onPress={() =>
-                    completeHabit(habit._id || habit.id || ""
-  )
-}
+              key={habit._id || habit.id}
+              onPress={() => completeHabit(habit._id || habit.id || "")}
               activeOpacity={0.85}
               style={[styles.card, { backgroundColor: habit.color }]}
             >
@@ -127,7 +128,7 @@ export default function HomeScreen() {
 
       {/* ---------- FLOATING ACTION BUTTON ---------- */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: BOTTOM_BAR_HEIGHT + insets.bottom + 16 }]}
         activeOpacity={0.85}
         onPress={() => router.push("/CreateRegularHabit")}
       >
