@@ -441,6 +441,8 @@ export default function MoodStatScreen() {
                       borderRadius: 12,
                       marginBottom: 16,
                     }}
+                   
+
                   >
                     <Text
                       style={{
@@ -483,6 +485,7 @@ export default function MoodStatScreen() {
                   marginBottom: 20,
                   textAlignVertical: "top",
                 }}
+              
               />
             </ScrollView>
             <View

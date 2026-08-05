@@ -29,8 +29,19 @@ export default function HomeScreen() {
 
   /* ---------- FILTER LOGIC ---------- */
 
-  const activeHabits = habits.filter((h) => !h.lastCompleted);
-  const completedHabits = habits.filter((h) => h.lastCompleted);
+  const today = new Date().toISOString().split("T")[0];
+
+const activeHabits = habits.filter(
+  (habit) =>
+    !habit.lastCompleted ||
+    !habit.lastCompleted.startsWith(today)
+);
+
+const completedHabits = habits.filter(
+  (habit) =>
+    habit.lastCompleted &&
+    habit.lastCompleted.startsWith(today)
+);
 
   const filteredHabits =
     timeFilter === "All"

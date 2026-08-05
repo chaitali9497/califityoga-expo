@@ -3,6 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { OnboardingProvider } from "@/src/context/OnboardingContext";
 import { HabitProvider } from "@/src/context/HabitContext";
 import { AuthProvider } from "@/src/context/AuthContext";
+import "../css/global.css";
 
 export default function RootLayout() {
   return (

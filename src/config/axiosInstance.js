@@ -1,6 +1,6 @@
+import { getAuthToken } from "@/src/store/authStorage";
 import axios from "axios";
 import API_BASE_URL from "./api";
-import { getAuthToken } from "@/src/store/authStorage";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -20,7 +20,17 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   async (config) => {
     try {
+      config.headers = config.headers || {};
+
       const token = await getAuthToken();
+
+      console.log("🔑 TOKEN:", token);
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        console.log("📤 AUTH HEADER:", config.headers.Authorization);
+      } else {
+        console.log("❌ NO TOKEN FOUND");
+      }
 
       console.log(
         "🌍 FULL URL:",
@@ -32,10 +42,10 @@ axiosInstance.interceptors.request.use(
         config.data
       );
 
-      if (token) {
-        config.headers.Authorization =
-          `Bearer ${token}`;
-      }
+      console.log(
+        "🧾 REQUEST HEADERS:",
+        config.headers
+      );
 
       return config;
     } catch (error) {

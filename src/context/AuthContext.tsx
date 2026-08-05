@@ -1,13 +1,13 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import axiosInstance from "@/src/config/axiosInstance";
 import {
-  saveAuthToken,
-  getAuthToken,
-  removeAuthToken,
-  saveUserData,
-  getUserData,
-  removeUserData,
   clearAllAuth,
+  getAuthToken,
+  getUserData,
+  saveAuthToken,
+  saveUserData,
+  setAuthToken,
 } from "@/src/store/authStorage";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 type User = {
   id: string;
@@ -38,8 +38,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const storedToken = await getAuthToken();
         const storedUser = await getUserData();
 
-        if (storedToken && storedUser) {
+        if (storedToken) {
           setToken(storedToken);
+          setAuthToken(storedToken);
+          axiosInstance.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+        }
+
+        if (storedUser) {
           setUser(storedUser);
         }
       } catch (error) {
@@ -56,6 +61,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setToken(newToken);
       setUser(newUser);
+      setAuthToken(newToken);
+      axiosInstance.defaults.headers.common.Authorization = `Bearer ${newToken}`;
       await saveAuthToken(newToken);
       await saveUserData(newUser);
     } catch (error) {
@@ -67,6 +74,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setToken(null);
       setUser(null);
+      setAuthToken(null);
+      delete axiosInstance.defaults.headers.common.Authorization;
       await clearAllAuth();
     } catch (error) {
       console.error("Error clearing auth:", error);

@@ -1,36 +1,23 @@
 import jwt from "jsonwebtoken";
 
-import {
-  Request,
-  Response,
-  NextFunction,
-} from "express";
+import { NextFunction, Request, Response } from "express";
 
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "supersecretkey";
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
 /**
  * Custom Request Type
  */
-export interface AuthRequest
-  extends Request {
+export interface AuthRequest extends Request {
   userId?: string;
 }
 
 /**
  * Generate JWT Token
  */
-export const generateToken = (
-  userId: string
-): string => {
-  return jwt.sign(
-    { userId },
-    JWT_SECRET,
-    {
-      expiresIn: "7d",
-    }
-  );
+export const generateToken = (userId: string): string => {
+  return jwt.sign({ userId }, JWT_SECRET, {
+    expiresIn: "7d",
+  });
 };
 
 /**
@@ -39,33 +26,28 @@ export const generateToken = (
 export const authenticateToken = (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    const authHeader =
-      req.headers.authorization;
+    const authHeader = req.headers.authorization;
+
+    console.log("📥 Authorization:", authHeader);
 
     if (!authHeader) {
       return res.status(401).json({
-        error:
-          "Authorization token missing",
+        error: "Authorization token missing",
       });
     }
 
-    const token =
-      authHeader.split(" ")[1];
+    const token = authHeader.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({
-        error:
-          "Invalid token format",
+        error: "Invalid token format",
       });
     }
 
-    const decoded = jwt.verify(
-      token,
-      JWT_SECRET
-    ) as {
+    const decoded = jwt.verify(token, JWT_SECRET) as {
       userId: string;
     };
 
@@ -73,14 +55,10 @@ export const authenticateToken = (
 
     next();
   } catch (error) {
-    console.error(
-      "❌ JWT ERROR:",
-      error
-    );
+    console.error("❌ JWT ERROR:", error);
 
     return res.status(401).json({
-      error:
-        "Invalid or expired token",
+      error: "Invalid or expired token",
     });
   }
 };

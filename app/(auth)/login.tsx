@@ -1,18 +1,17 @@
+import Loader from "@/src/components/Loader";
+import { useAuth } from "@/src/context/AuthContext";
+import { getApiErrorMessage, login } from "@/src/services/authService";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getApiErrorMessage, login } from "@/src/services/authService";
-import { useAuth } from "@/src/context/AuthContext";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -147,17 +146,7 @@ export default function LoginScreen() {
         <Text style={styles.loginText}>Sign in</Text>
       </TouchableOpacity>
 
-      {/* Loader */}
-      <Modal transparent visible={loading}>
-        <View style={styles.overlay}>
-          <View style={styles.loaderBox}>
-            <ActivityIndicator size="large" color="#2E7D32" />
-            <Text style={styles.loadingText}>
-              Waking server and signing in...
-            </Text>
-          </View>
-        </View>
-      </Modal>
+      <Loader visible={loading} message="Waking server and signing in..." />
     </View>
   );
 }

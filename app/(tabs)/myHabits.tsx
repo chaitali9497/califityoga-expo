@@ -4,13 +4,13 @@ import { Habit } from "@/src/types/Habit";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-    Dimensions,
-    FlatList,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  FlatList,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -106,14 +106,20 @@ export default function MyHabitsScreen() {
 
     return (
       <TouchableOpacity
-        onPress={() => router.push({ pathname: "/(tabs)/CreateRegularHabit" })}
+        onPress={() =>
+          router.push({
+            pathname: "/EditHabit",
+            params: { id: habit._id ?? habit.id },
+          })
+        }
         style={{ marginHorizontal: 16, marginBottom: 12 }}
       >
         <View
           style={{
             backgroundColor: habitColor,
             borderRadius: 12,
-            padding: 16,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
@@ -124,10 +130,17 @@ export default function MyHabitsScreen() {
             elevation: 3,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              flex: 1,
+              marginRight: 20,
+            }}
+          >
             <Text
               style={{
-                fontSize: 24,
+                fontSize: 20,
                 marginRight: 12,
               }}
             >
@@ -136,29 +149,38 @@ export default function MyHabitsScreen() {
             </Text>
             <View style={{ flex: 1 }}>
               <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
                 style={{
                   fontSize: 16,
                   fontWeight: "600",
                   color: "white",
                   marginBottom: 4,
+                  paddingRight: 8,
                 }}
               >
                 {habit.name}
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 6,
+                }}
+              >
                 <Text
                   style={{
-                    fontSize: 12,
-                    color: "rgba(255,255,255,0.8)",
-                    marginRight: 8,
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.85)",
+                    marginRight: 12,
                   }}
                 >
                   🔥 {habit.streak}
                 </Text>
                 <Text
                   style={{
-                    fontSize: 12,
-                    color: "rgba(255,255,255,0.8)",
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.85)",
                   }}
                 >
                   {habit.repeat}
@@ -175,7 +197,7 @@ export default function MyHabitsScreen() {
               backgroundColor: "rgba(255,255,255,0.3)",
               alignItems: "center",
               justifyContent: "center",
-              marginLeft: 12,
+              marginLeft: 20,
             }}
           >
             <Text
@@ -245,7 +267,13 @@ export default function MyHabitsScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingTop: insets.top,
+      }}
+    >
       {/* Header */}
       <View
         style={{
@@ -330,18 +358,25 @@ export default function MyHabitsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ paddingVertical: 12 }}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          alignItems: "center",
+        }}
+        style={{
+          maxHeight: 56,
+        }}
       >
         {sortOptions.map((option) => (
           <TouchableOpacity
             key={option}
             onPress={() => setSelectedSort(option)}
             style={{
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 6,
-              marginRight: 8,
+              height: 38,
+              justifyContent: "center",
+              paddingHorizontal: 18,
+              borderRadius: 20,
+              marginRight: 10,
               backgroundColor:
                 selectedSort === option ? colors.primary : colors.inputBg,
               borderWidth: 1,
@@ -390,7 +425,9 @@ export default function MyHabitsScreen() {
         <FlatList
           data={filteredHabits}
           renderItem={renderHabitCard}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) =>
+            item._id ?? item.id ?? index.toString()
+          }
           contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
           scrollEnabled={true}
           showsVerticalScrollIndicator={false}

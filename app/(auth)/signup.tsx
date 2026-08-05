@@ -1,18 +1,17 @@
+import Loader from "@/src/components/Loader";
+import { useAuth } from "@/src/context/AuthContext";
+import { getApiErrorMessage, register } from "@/src/services/authService";
+import { colors } from "@/src/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  ActivityIndicator,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "@/src/theme";
-import { useRouter } from "expo-router";
-import { getApiErrorMessage, register } from "@/src/services/authService";
-import { useAuth } from "@/src/context/AuthContext";
 
 export default function SignUpScreen() {
   const [name, setName] = useState("");
@@ -166,17 +165,10 @@ export default function SignUpScreen() {
         <Text style={styles.signUpText}>Sign up</Text>
       </TouchableOpacity>
 
-      {/* Loader */}
-      <Modal transparent visible={loading}>
-        <View style={styles.overlay}>
-          <View style={styles.loaderBox}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>
-              Waking server and creating account...
-            </Text>
-          </View>
-        </View>
-      </Modal>
+      <Loader
+        visible={loading}
+        message="Waking server and creating account..."
+      />
     </View>
   );
 }

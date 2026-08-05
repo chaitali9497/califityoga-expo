@@ -1,12 +1,9 @@
+import { clearAllAuth, getUserData } from "@/src/store/authStorage";
 import { colors } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 import {
-    Alert,
     Dimensions,
     Modal,
     ScrollView,
@@ -15,11 +12,6 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import {
-  getUserData,
-  clearAllAuth,
-} from "@/src/store/authStorage";
-
 
 const { width } = Dimensions.get("window");
 
@@ -95,39 +87,36 @@ export default function AccountScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [user, setUser] = useState({name: "", email: "",});
+  const [showClearCacheAlert, setShowClearCacheAlert] = useState(false);
+  const [user, setUser] = useState({ name: "", email: "" });
 
   useEffect(() => {
-  const loadUser = async () => {
-    try {
-      const userData =
-        await getUserData();
+    const loadUser = async () => {
+      try {
+        const userData = await getUserData();
 
-      if (userData) {
-        setUser(userData);
+        if (userData) {
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error("Error loading user:", error);
       }
-    } catch (error) {
-      console.error(
-        "Error loading user:",
-        error
-      );
-    }
-  };
+    };
 
-  loadUser();
-}, []);
+    loadUser();
+  }, []);
 
   const handleLogout = () => {
     setShowLogoutModal(true);
   };
 
-const confirmLogout = async () => {
-  await clearAllAuth();
+  const confirmLogout = async () => {
+    await clearAllAuth();
 
-  setShowLogoutModal(false);
+    setShowLogoutModal(false);
 
-  router.replace("/(auth)/login");
-};
+    router.replace("/(auth)/login");
+  };
 
   return (
     <ScrollView
@@ -484,9 +473,7 @@ const confirmLogout = async () => {
             icon="trash-outline"
             label="Clear Cache"
             value="0 MB"
-            onPress={() => {
-              Alert.alert("Clear Cache", "Cache cleared successfully!");
-            }}
+            onPress={() => setShowClearCacheAlert(true)}
             color="Ionicons"
           />
           <MenuItem
@@ -634,6 +621,16 @@ const confirmLogout = async () => {
           </View>
         </View>
       </Modal>
+
+      <AppAlert
+        visible={showClearCacheAlert}
+        type="success"
+        title="Clear Cache"
+        message="Cache cleared successfully!"
+        confirmText="Awesome"
+        onConfirm={() => setShowClearCacheAlert(false)}
+        onCancel={() => setShowClearCacheAlert(false)}
+      />
     </ScrollView>
   );
 }
