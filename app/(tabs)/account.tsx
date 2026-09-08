@@ -1,16 +1,17 @@
+import AppAlert from "@/src/components/AppAlert";
 import { clearAllAuth, getUserData } from "@/src/store/authStorage";
 import { colors } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Dimensions,
-    Modal,
-    ScrollView,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Modal,
+  ScrollView,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const { width } = Dimensions.get("window");

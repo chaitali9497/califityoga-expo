@@ -49,4 +49,10 @@ export const register = async ({ name, email, password }: AuthPayload) => {
   return response.data;
 };
 
+export const getProfile = async () => {
+  const response = await axiosInstance.get(API_ENDPOINTS.AUTH.PROFILE);
+
+  return response.data;
+};
+
 export { getApiErrorMessage };

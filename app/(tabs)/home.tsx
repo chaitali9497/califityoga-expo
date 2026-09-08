@@ -4,12 +4,13 @@ import { colors } from "@/src/theme";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import AppAlert from "@/src/components/AppAlert";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -22,31 +23,47 @@ const BOTTOM_BAR_HEIGHT = 74;
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState("Today");
   const [timeFilter, setTimeFilter] = useState("All");
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [selectedHabit, setSelectedHabit] = useState<any>(null);
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { habits, completeHabit } = useHabits();
+  const { habits, completeHabit, deleteHabit } = useHabits();
 
   /* ---------- FILTER LOGIC ---------- */
 
   const today = new Date().toISOString().split("T")[0];
 
-const activeHabits = habits.filter(
-  (habit) =>
-    !habit.lastCompleted ||
-    !habit.lastCompleted.startsWith(today)
-);
+  const activeHabits = habits.filter(
+    (habit) => !habit.lastCompleted || !habit.lastCompleted.startsWith(today),
+  );
 
-const completedHabits = habits.filter(
-  (habit) =>
-    habit.lastCompleted &&
-    habit.lastCompleted.startsWith(today)
-);
+  const completedHabits = habits.filter(
+    (habit) => habit.lastCompleted && habit.lastCompleted.startsWith(today),
+  );
 
   const filteredHabits =
     timeFilter === "All"
       ? activeHabits
       : activeHabits.filter((h) => h.timeOfDay === timeFilter);
+
+  const handleDeletePress = (habit: any) => {
+    setSelectedHabit(habit);
+    setDeleteVisible(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedHabit) return;
+
+    try {
+      await deleteHabit(selectedHabit._id || selectedHabit.id);
+
+      setDeleteVisible(false);
+      setSelectedHabit(null);
+    } catch (error) {
+      console.error("Delete failed:", error);
+    }
+  };
 
   return (
     <View style={styles.screen}>
@@ -108,17 +125,80 @@ const completedHabits = habits.filter(
             <Text style={styles.emptyText}>No habits for this time ⏳</Text>
           )}
 
-          {filteredHabits.map((habit) => (
-            <TouchableOpacity
-              key={habit._id || habit.id}
-              onPress={() => completeHabit(habit._id || habit.id || "")}
-              activeOpacity={0.85}
-              style={[styles.card, { backgroundColor: habit.color }]}
-            >
-              <Text style={styles.cardIcon}>{habit.icon}</Text>
-              <Text style={styles.cardText}>{habit.name}</Text>
-            </TouchableOpacity>
-          ))}
+          {filteredHabits.map((habit) => {
+            const habitId = habit._id || habit.id || "";
+
+            return (
+              <View
+                key={habitId}
+                style={[styles.card, { backgroundColor: habit.color }]}
+              >
+                {/* Habit information */}
+                <TouchableOpacity
+                  style={styles.habitContent}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/EditHabit",
+                      params: {
+                        id: habitId,
+                      },
+                    })
+                  }
+                >
+                  <Text style={styles.cardIcon}>{habit.icon}</Text>
+
+                  <Text style={styles.cardText}>{habit.name}</Text>
+                </TouchableOpacity>
+
+                {/* Actions */}
+                <View style={styles.actions}>
+                  {/* Complete */}
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => completeHabit(habitId)}
+                  >
+                    <MaterialIcons
+                      name="check"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Edit */}
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/EditHabit",
+                        params: {
+                          id: habitId,
+                        },
+                      })
+                    }
+                  >
+                    <MaterialIcons
+                      name="edit"
+                      size={19}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Delete */}
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => handleDeletePress(habit)}
+                  >
+                    <MaterialIcons
+                      name="delete-outline"
+                      size={20}
+                      color="#D32F2F"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
         </View>
 
         {/* ---------- COMPLETED ---------- */}
@@ -127,7 +207,7 @@ const completedHabits = habits.filter(
             <Text style={styles.completedTitle}>Completed</Text>
 
             {completedHabits.map((habit) => (
-              <View key={habit.id} style={styles.completedCard}>
+              <View key={habit._id || habit.id} style={styles.completedCard}>
                 <Text style={styles.completedIcon}>{habit.icon}</Text>
                 <Text style={styles.completedText}>{habit.name}</Text>
                 <View style={styles.check} />
@@ -136,6 +216,24 @@ const completedHabits = habits.filter(
           </>
         )}
       </ScrollView>
+
+      <AppAlert
+        visible={deleteVisible}
+        type="error"
+        title="Delete Habit?"
+        message={
+          selectedHabit
+            ? `Are you sure you want to delete "${selectedHabit.name}"? This action cannot be undone.`
+            : ""
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        onCancel={() => {
+          setDeleteVisible(false);
+          setSelectedHabit(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+      />
 
       {/* ---------- FLOATING ACTION BUTTON ---------- */}
       <TouchableOpacity
@@ -243,9 +341,10 @@ const styles = StyleSheet.create({
 
   card: {
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     flexDirection: "row",
     alignItems: "center",
+    minHeight: 64,
   },
 
   cardIcon: {
@@ -257,6 +356,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#111",
+  },
+
+  habitContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+
+  actionButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,0.65)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 6,
   },
 
   emptyText: {

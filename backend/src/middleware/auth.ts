@@ -2,7 +2,11 @@ import jwt from "jsonwebtoken";
 
 import { NextFunction, Request, Response } from "express";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not configured");
+}
 
 /**
  * Custom Request Type

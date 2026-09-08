@@ -1,11 +1,11 @@
 import axiosInstance from "@/src/config/axiosInstance";
+import { getProfile } from "@/src/services/authService";
 import {
-  clearAllAuth,
-  getAuthToken,
-  getUserData,
-  saveAuthToken,
-  saveUserData,
-  setAuthToken,
+    clearAllAuth,
+    getAuthToken,
+    saveAuthToken,
+    saveUserData,
+    setAuthToken,
 } from "@/src/store/authStorage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
@@ -36,19 +36,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const initAuth = async () => {
       try {
         const storedToken = await getAuthToken();
-        const storedUser = await getUserData();
 
-        if (storedToken) {
-          setToken(storedToken);
-          setAuthToken(storedToken);
-          axiosInstance.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+        if (!storedToken) {
+          return;
         }
 
-        if (storedUser) {
-          setUser(storedUser);
-        }
+        const profile = await getProfile();
+
+        setToken(storedToken);
+        setAuthToken(storedToken);
+        axiosInstance.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
+
+        const nextUser = {
+          id: profile.id,
+          email: profile.email,
+          name: profile.name,
+        };
+
+        setUser(nextUser);
+        await saveUserData(nextUser);
       } catch (error) {
-        console.error("Error initializing auth:", error);
+        console.log("🔐 Stored session is invalid. Clearing auth.");
+        setToken(null);
+        setUser(null);
+        setAuthToken(null);
+        delete axiosInstance.defaults.headers.common.Authorization;
+        await clearAllAuth();
       } finally {
         setIsLoading(false);
       }

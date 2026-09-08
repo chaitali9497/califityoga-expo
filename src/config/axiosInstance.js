@@ -4,56 +4,31 @@ import API_BASE_URL from "./api";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
-
   headers: {
     "Content-Type": "application/json",
   },
-
-  // Increased timeout for Render free tier cold starts
   timeout: 60000,
-
-  // Important for some mobile requests
- // withCredentials: true,
 });
 
 // REQUEST INTERCEPTOR
 axiosInstance.interceptors.request.use(
   async (config) => {
     try {
-      config.headers = config.headers || {};
-
       const token = await getAuthToken();
 
-      console.log("🔑 TOKEN:", token);
+      console.log(
+        "🌍 REQUEST:",
+        config.method?.toUpperCase(),
+        config.url
+      );
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log("📤 AUTH HEADER:", config.headers.Authorization);
-      } else {
-        console.log("❌ NO TOKEN FOUND");
       }
-
-      console.log(
-        "🌍 FULL URL:",
-        `${config.baseURL}${config.url}`
-      );
-
-      console.log(
-        "📦 REQUEST DATA:",
-        config.data
-      );
-
-      console.log(
-        "🧾 REQUEST HEADERS:",
-        config.headers
-      );
 
       return config;
     } catch (error) {
-      console.error(
-        "❌ REQUEST ERROR:",
-        error
-      );
-
+      console.error("❌ REQUEST INTERCEPTOR ERROR:", error);
       return Promise.reject(error);
     }
   }
@@ -64,60 +39,37 @@ axiosInstance.interceptors.response.use(
   (response) => {
     console.log(
       "✅ RESPONSE:",
-      response.data
+      response.config.method?.toUpperCase(),
+      response.config.url,
+      response.status
     );
 
     return response;
   },
 
   async (error) => {
-    console.log(
-      "❌ FULL ERROR:",
-      error
-    );
-
-    // Timeout / Render sleeping
-    if (
-      error.code === "ECONNABORTED"
-    ) {
-      console.log(
-        "⏳ Render server is waking up..."
-      );
-    }
-
-    // Backend responded
     if (error.response) {
-      console.log(
-        "❌ STATUS:",
+      console.error(
+        "❌ API ERROR:",
+        error.config?.method?.toUpperCase(),
+        error.config?.url,
         error.response.status
       );
 
-      console.log(
-        "❌ RESPONSE DATA:",
-        error.response.data
+      console.error(
+        "❌ SERVER MESSAGE:",
+        error.response.data?.message ||
+          error.response.data?.error ||
+          "Unknown server error"
       );
-
-      console.log(
-        "❌ RESPONSE HEADERS:",
-        error.response.headers
-      );
+    } else if (error.request) {
+      console.error("❌ NO RESPONSE FROM SERVER");
+    } else {
+      console.error("❌ AXIOS ERROR:", error.message);
     }
 
-    // No response
-    else if (error.request) {
-      console.log(
-        "❌ NO RESPONSE RECEIVED"
-      );
-
-      console.log(error.request);
-    }
-
-    // Other axios error
-    else {
-      console.log(
-        "❌ AXIOS ERROR MESSAGE:",
-        error.message
-      );
+    if (error.code === "ECONNABORTED") {
+      console.error("⏳ Request timed out. Server may be waking up.");
     }
 
     return Promise.reject(error);

@@ -1,19 +1,22 @@
+import { useAuth } from "@/src/context/AuthContext";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 import { Habit } from "@/src/types/Habit";
 
 import {
-  completeHabit as completeHabitAPI,
-  createHabit as createHabitAPI,
-  getAllHabits,
+    completeHabit as completeHabitAPI,
+    createHabit as createHabitAPI,
+    deleteHabit as deleteHabitAPI,
+    getAllHabits,
 } from "@/src/services/habitService";
 
 type HabitContextType = {
   habits: Habit[];
   loading: boolean;
   refreshHabits: () => Promise<void>;
-  addHabit: (habit: Habit) => Promise<Habit | undefined>;
+  addHabit: (habit: Habit) => Promise<void>;
   completeHabit: (id: string) => Promise<void>;
+  deleteHabit: (id: string) => Promise<void>;
 };
 
 const HabitContext = createContext<HabitContextType>(null as any);
@@ -36,9 +39,22 @@ export const HabitProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const { isLoading: authLoading, isLoggedIn } = useAuth();
+
   useEffect(() => {
     const init = async () => {
       try {
+        if (authLoading) {
+          return;
+        }
+
+        if (!isLoggedIn) {
+          setHabits([]);
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
         await refreshHabits();
       } finally {
         setLoading(false);
@@ -46,14 +62,12 @@ export const HabitProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     init();
-  }, []);
+  }, [authLoading, isLoggedIn]);
 
   const addHabit = async (habit: Habit) => {
     try {
-      const data = await createHabitAPI(habit);
-      const savedHabit = data?.habit || data;
+      await createHabitAPI(habit);
       await refreshHabits();
-      return savedHabit;
     } catch (error) {
       console.error("Failed to create habit:", error);
       throw error;
@@ -75,6 +89,21 @@ export const HabitProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const deleteHabit = async (id: string) => {
+    if (!id) {
+      console.warn("deleteHabit called without id");
+      return;
+    }
+
+    try {
+      await deleteHabitAPI(id);
+      await refreshHabits();
+    } catch (error) {
+      console.error("Failed to delete habit:", error);
+      throw error;
+    }
+  };
+
   return (
     <HabitContext.Provider
       value={{
@@ -83,6 +112,7 @@ export const HabitProvider = ({ children }: { children: React.ReactNode }) => {
         refreshHabits,
         addHabit,
         completeHabit,
+        deleteHabit,
       }}
     >
       {children}
