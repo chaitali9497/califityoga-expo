@@ -55,4 +55,10 @@ export const getProfile = async () => {
   return response.data;
 };
 
+export const deleteAccount = async () => {
+  const response = await axiosInstance.delete("/api/auth/account");
+
+  return response.data;
+};
+
 export { getApiErrorMessage };

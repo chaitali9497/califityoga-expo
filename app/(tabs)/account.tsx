@@ -1,5 +1,7 @@
 import AppAlert from "@/src/components/AppAlert";
-import { clearAllAuth, getUserData } from "@/src/store/authStorage";
+import { useAuth } from "@/src/context/AuthContext";
+import { deleteAccount } from "@/src/services/authService";
+import { getUserData } from "@/src/store/authStorage";
 import { colors } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -84,11 +86,14 @@ const MenuItem: React.FC<MenuItemProps> = ({
 };
 
 export default function AccountScreen() {
+  const { clearAuth } = useAuth();
   const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showClearCacheAlert, setShowClearCacheAlert] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [user, setUser] = useState({ name: "", email: "" });
 
   useEffect(() => {
@@ -112,11 +117,31 @@ export default function AccountScreen() {
   };
 
   const confirmLogout = async () => {
-    await clearAllAuth();
+    await clearAuth();
 
     setShowLogoutModal(false);
 
     router.replace("/(auth)/login");
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (deletingAccount) return;
+
+    try {
+      setDeletingAccount(true);
+
+      await deleteAccount();
+
+      await clearAuth();
+
+      setShowDeleteAccountModal(false);
+
+      router.replace("/(auth)/login");
+    } catch (error) {
+      console.error("Delete account failed:", error);
+
+      setDeletingAccount(false);
+    }
   };
 
   return (
@@ -486,6 +511,42 @@ export default function AccountScreen() {
         </View>
       </View>
 
+      {/* Delete Account */}
+      <TouchableOpacity
+        onPress={() => setShowDeleteAccountModal(true)}
+        style={{
+          marginHorizontal: 16,
+          marginBottom: 12,
+          padding: 12,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: colors.danger,
+          backgroundColor: "rgba(239, 68, 68, 0.05)",
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Ionicons
+            name="trash-outline"
+            size={20}
+            color={colors.danger}
+            style={{ marginRight: 12 }}
+          />
+
+          <Text
+            style={{
+              flex: 1,
+              fontSize: 14,
+              fontWeight: "600",
+              color: colors.danger,
+            }}
+          >
+            Delete Account
+          </Text>
+
+          <Ionicons name="chevron-forward" size={20} color={colors.danger} />
+        </View>
+      </TouchableOpacity>
+
       {/* Logout */}
       <TouchableOpacity
         onPress={handleLogout}
@@ -616,6 +677,110 @@ export default function AccountScreen() {
                   }}
                 >
                   Logout
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        visible={showDeleteAccountModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteAccountModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.white,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 24,
+              paddingBottom: 32,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "600",
+                color: colors.danger,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              Delete Account?
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 21,
+                color: colors.textSecondary,
+                marginBottom: 24,
+                textAlign: "center",
+              }}
+            >
+              This will permanently delete your account, habits, mood entries,
+              and associated data. This action cannot be undone.
+            </Text>
+
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 12,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => setShowDeleteAccountModal(false)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: colors.textSecondary,
+                    textAlign: "center",
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={confirmDeleteAccount}
+                disabled={deletingAccount}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  backgroundColor: colors.danger,
+                  opacity: deletingAccount ? 0.6 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: colors.white,
+                    textAlign: "center",
+                  }}
+                >
+                  {deletingAccount ? "Deleting..." : "Delete Account"}
                 </Text>
               </TouchableOpacity>
             </View>

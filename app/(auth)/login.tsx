@@ -5,11 +5,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -26,16 +26,21 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleLogin = async () => {
+    if (!email.trim() || !password.trim() || loading) {
+      return;
+    }
+
     setLoading(true);
     setErrorMessage("");
 
     try {
-      const response = await login({ email, password });
+      const response = await login({
+        email: email.trim(),
+        password,
+      });
 
-      // Save auth token and user data
       await setAuth(response.token, response.user);
 
-      setLoading(false);
       router.replace("/(tabs)/home");
     } catch (error) {
       setLoading(false);
@@ -146,7 +151,7 @@ export default function LoginScreen() {
         <Text style={styles.loginText}>Sign in</Text>
       </TouchableOpacity>
 
-      <Loader visible={loading} message="Waking server and signing in..." />
+      <Loader visible={loading} message="Signing in..." />
     </View>
   );
 }

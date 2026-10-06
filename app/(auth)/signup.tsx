@@ -1,6 +1,7 @@
 import Loader from "@/src/components/Loader";
 import { useAuth } from "@/src/context/AuthContext";
 import { getApiErrorMessage, register } from "@/src/services/authService";
+import { setFirstLogin } from "@/src/store/authStorage";
 import { colors } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -35,6 +36,9 @@ export default function SignUpScreen() {
 
       // Save auth token and user data
       await setAuth(response.token, response.user);
+
+      // Mark this as a brand-new user
+      await setFirstLogin(true);
 
       setLoading(false);
       router.replace("/(onboarding)/step1");
@@ -165,10 +169,7 @@ export default function SignUpScreen() {
         <Text style={styles.signUpText}>Sign up</Text>
       </TouchableOpacity>
 
-      <Loader
-        visible={loading}
-        message="Waking server and creating account..."
-      />
+      <Loader visible={loading} message="Creating your account..." />
     </View>
   );
 }

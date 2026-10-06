@@ -1,14 +1,13 @@
-import express, {
-  Request,
-  Response,
-} from "express";
+import express, { Request, Response } from "express";
 
 import {
-  generateToken,
-  authenticateToken,
-  AuthRequest,
+    authenticateToken,
+    AuthRequest,
+    generateToken,
 } from "../middleware/auth";
 
+import Habit from "../models/Habit";
+import Mood from "../models/Mood";
 import User from "../models/User";
 
 const router = express.Router();
@@ -16,158 +15,108 @@ const router = express.Router();
 /**
  * REGISTER
  */
-router.post(
-  "/register",
-  async (req: Request, res: Response) => {
-    try {
-      const {
-        email,
-        password,
-        name,
-      } = req.body;
+router.post("/register", async (req: Request, res: Response) => {
+  try {
+    const { email, password, name } = req.body;
 
-      if (!email || !password) {
-        return res.status(400).json({
-          error:
-            "Email and password are required",
-        });
-      }
-
-      const normalizedEmail =
-        String(email)
-          .toLowerCase()
-          .trim();
-
-      const existingUser =
-        await User.findOne({
-          email: normalizedEmail,
-        });
-
-      if (existingUser) {
-        return res.status(409).json({
-          error:
-            "User already exists",
-        });
-      }
-
-      const user = new User({
-        email: normalizedEmail,
-        password,
-        name:
-          typeof name === "string"
-            ? name.trim()
-            : "",
-      });
-
-      await user.save();
-
-      const token =
-        generateToken(
-          user._id.toString()
-        );
-
-      return res.status(201).json({
-        message:
-          "User registered successfully",
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-        },
-      });
-    } catch (error: any) {
-      console.error(
-        "❌ REGISTER ERROR:",
-        error
-      );
-
-      return res.status(500).json({
-        error:
-          error.message ||
-          "Registration failed",
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "Email and password are required",
       });
     }
+
+    const normalizedEmail = String(email).toLowerCase().trim();
+
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        error: "User already exists",
+      });
+    }
+
+    const user = new User({
+      email: normalizedEmail,
+      password,
+      name: typeof name === "string" ? name.trim() : "",
+    });
+
+    await user.save();
+
+    const token = generateToken(user._id.toString());
+
+    return res.status(201).json({
+      message: "User registered successfully",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ REGISTER ERROR:", error);
+
+    return res.status(500).json({
+      error: error.message || "Registration failed",
+    });
   }
-);
+});
 
 /**
  * LOGIN
  */
-router.post(
-  "/login",
-  async (req: Request, res: Response) => {
-    try {
-      const {
-        email,
-        password,
-      } = req.body;
+router.post("/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
 
-      if (!email || !password) {
-        return res.status(400).json({
-          error:
-            "Email and password are required",
-        });
-      }
-
-      const normalizedEmail =
-        String(email)
-          .toLowerCase()
-          .trim();
-
-      const user =
-        await User.findOne({
-          email: normalizedEmail,
-        });
-
-      if (!user) {
-        return res.status(401).json({
-          error:
-            "Invalid credentials",
-        });
-      }
-
-      const isPasswordValid =
-        await user.comparePassword(
-          password
-        );
-
-      if (!isPasswordValid) {
-        return res.status(401).json({
-          error:
-            "Invalid credentials",
-        });
-      }
-
-      const token =
-        generateToken(
-          user._id.toString()
-        );
-
-      return res.json({
-        message:
-          "Login successful",
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-        },
-      });
-    } catch (error: any) {
-      console.error(
-        "❌ LOGIN ERROR:",
-        error
-      );
-
-      return res.status(500).json({
-        error:
-          error.message ||
-          "Login failed",
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "Email and password are required",
       });
     }
+
+    const normalizedEmail = String(email).toLowerCase().trim();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        error: "Invalid credentials",
+      });
+    }
+
+    const isPasswordValid = await user.comparePassword(password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        error: "Invalid credentials",
+      });
+    }
+
+    const token = generateToken(user._id.toString());
+
+    return res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ LOGIN ERROR:", error);
+
+    return res.status(500).json({
+      error: error.message || "Login failed",
+    });
   }
-);
+});
 
 /**
  * GET PROFILE
@@ -175,14 +124,9 @@ router.post(
 router.get(
   "/profile",
   authenticateToken,
-  async (
-    req: AuthRequest,
-    res: Response
-  ) => {
+  async (req: AuthRequest, res: Response) => {
     try {
-      const user = await User.findById(
-        req.userId
-      ).select("-password");
+      const user = await User.findById(req.userId).select("-password");
 
       if (!user) {
         return res.status(404).json({
@@ -196,18 +140,63 @@ router.get(
         name: user.name,
       });
     } catch (error: any) {
-      console.error(
-        "❌ PROFILE ERROR:",
-        error
-      );
+      console.error("❌ PROFILE ERROR:", error);
 
       return res.status(500).json({
-        error:
-          error.message ||
-          "Failed to fetch profile",
+        error: error.message || "Failed to fetch profile",
       });
     }
-  }
+  },
+);
+
+/**
+ * DELETE ACCOUNT
+ * Deletes the authenticated user's account
+ * and all associated user data.
+ */
+router.delete(
+  "/account",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          error: "Unauthorized",
+        });
+      }
+
+      // Delete all habits belonging to this user
+      await Habit.deleteMany({
+        userId,
+      });
+
+      // Delete all mood/journal entries belonging to this user
+      await Mood.deleteMany({
+        userId,
+      });
+
+      // Delete the user account
+      const deletedUser = await User.findByIdAndDelete(userId);
+
+      if (!deletedUser) {
+        return res.status(404).json({
+          error: "User not found",
+        });
+      }
+
+      return res.json({
+        message: "Account and associated data deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("❌ DELETE ACCOUNT ERROR:", error);
+
+      return res.status(500).json({
+        error: error.message || "Failed to delete account",
+      });
+    }
+  },
 );
 
 export default router;

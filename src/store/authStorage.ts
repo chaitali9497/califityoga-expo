@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AUTH_TOKEN_KEY = "authToken";
 const USER_DATA_KEY = "userData";
+const FIRST_LOGIN_KEY = "firstLogin";
 let cachedAuthToken: string | null = null;
 
 export const saveAuthToken = async (token: string) => {
@@ -73,5 +74,31 @@ export const clearAllAuth = async () => {
     await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_DATA_KEY]);
   } catch (error) {
     console.error("Error clearing auth data:", error);
+  }
+};
+
+export const setFirstLogin = async (value: boolean) => {
+  try {
+    await AsyncStorage.setItem(FIRST_LOGIN_KEY, value ? "true" : "false");
+  } catch (error) {
+    console.error("Error saving first login status:", error);
+  }
+};
+
+export const getFirstLogin = async () => {
+  try {
+    const value = await AsyncStorage.getItem(FIRST_LOGIN_KEY);
+    return value === "true";
+  } catch (error) {
+    console.error("Error retrieving first login status:", error);
+    return false;
+  }
+};
+
+export const clearFirstLogin = async () => {
+  try {
+    await AsyncStorage.removeItem(FIRST_LOGIN_KEY);
+  } catch (error) {
+    console.error("Error clearing first login status:", error);
   }
 };
